@@ -13,6 +13,43 @@ from transformers import AutoModelForCausalLM, BitsAndBytesConfig, AutoTokenizer
 from peft import AutoPeftModelForCausalLM
 import argparse
 
+def calc_qerror(estimated_cardinality, actual_cardinality):
+    return max(estimated_cardinality / actual_cardinality, actual_cardinality / estimated_cardinality)
+
+def print_qerror_stats(qerror_list):
+    qerror_mean = np.mean(qerror_list)
+    print("\tmean", qerror_mean)
+    qerror_median = np.median(qerror_list)
+    print("\tmedian", qerror_median)
+    qerror_max = np.max(qerror_list)
+    print("\max", qerror_max)
+
+    # Computing the 90th percentile
+    percentile_90 = np.percentile(qerror_list, 90)
+    print("\t90th percentile:", percentile_90)
+
+    # Computing the 95th percentile
+    percentile_95 = np.percentile(qerror_list, 95)
+    print("\t95th percentile:", percentile_95)
+    pass
+
+def extract_cardinality(text):
+    """
+    This helper function is to extract the output cardinality from LLM output
+    """
+    i = 0
+    while i < len(text) and (not (text[i] >= '0' and text[i] <= '9')):
+        i += 1
+    
+    cardinality = 0
+    while i < len(text):
+        if text[i] >= '0' and text[i] <= '9':
+            cardinality = 10 * cardinality + (ord(text[i]) - ord('0'))
+        else:
+            break
+        i += 1
+    return cardinality
+
 def test(checkpoint_dir, device="cuda:0"):
     model = AutoPeftModelForCausalLM.from_pretrained(checkpoint_dir, 
                                                      device_map=device, 
@@ -20,13 +57,15 @@ def test(checkpoint_dir, device="cuda:0"):
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
     dataset_name = "yuanbiao/imdb-card-pred"
     dataset = load_dataset(dataset_name, split="train")
+    qerror_list = []
+    step = 1
     for data in dataset:
         text = data['text']
         tokens = text.split(' ')
         gt_cardinality = int(tokens[-1])
 
         # Process prompts
-        prompt = " ".join(tokens[:-1])
+        prompt = " ".join(tokens[:-1]) + " "
         inputs = tokenizer(prompt, return_tensors="pt").to(device)
         outputs = model.generate(
             input_ids=inputs["input_ids"],
@@ -34,9 +73,18 @@ def test(checkpoint_dir, device="cuda:0"):
             max_new_tokens=50, 
             pad_token_id=tokenizer.eos_token_id)
 
-        print(outputs)
-        exit(0)
-    pass
+
+        output_text = tokenizer.decode(outputs[0], skip_special_tokens=True)[len(prompt):]
+        output_cardinality = extract_cardinality(output_text)
+
+        # Calculate qerror
+        qerror = calc_qerror(output_cardinality, gt_cardinality)
+        qerror_list.append(qerror)
+
+        step += 1
+        if step % 10 == 0:
+            print(f"{step} / {len(data)}")
+            print_qerror_stats(qerror_list)
 
 
 
