@@ -1,4 +1,4 @@
 wandb/**
-results/**
+results*/**
 *.csv
 *.log
