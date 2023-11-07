@@ -72,10 +72,11 @@ def train(output_dir):
         bias="none",
         task_type="CAUSAL_LM",
     )
+    model = prepare_model_for_kbit_training(model)
     model = get_peft_model(model, peft_config)
 
 
-    batch_size = 2
+    batch_size = 100
     max_steps = (100000) // batch_size
     training_args = TrainingArguments(
         output_dir=output_dir,
