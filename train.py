@@ -52,11 +52,10 @@ def load_model_and_tokenizer():
 
     return base_model, tokenizer
 
-def train(output_dir):
+def train(dataset_name, output_dir):
     """
     Load dataset
     """
-    dataset_name = "yuanbiao/imdb-card-pred"
     dataset = load_dataset(dataset_name, split="train")
 
     max_seq_length = 512
@@ -77,11 +76,9 @@ def train(output_dir):
 
 
     batch_size = 100
-    max_steps = (100000) // batch_size
     training_args = TrainingArguments(
         output_dir=output_dir,
         per_device_train_batch_size=batch_size,
-        max_steps=max_steps,
         num_train_epochs=3,
         gradient_accumulation_steps=2,
         gradient_checkpointing=True,
@@ -110,6 +107,7 @@ def train(output_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script with two string parameters')
+    parser.add_argument('dataset', type=str, help='which dataset')
     parser.add_argument('checkpoint_dir', type=str, help='Directory for checkpoints')
     args = parser.parse_args()
-    train(args.checkpoint_dir)
+    train(args.dataset, args.checkpoint_dir)
