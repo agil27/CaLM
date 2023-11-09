@@ -20,7 +20,7 @@ from peft import LoraConfig
 from trl import SFTTrainer
 
 
-def load_model_and_tokenizer():
+def load_qlora_model_and_tokenizer():
     """
     Load model and tokenizer
     """
@@ -51,9 +51,61 @@ def load_model_and_tokenizer():
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
-    return base_model, tokenizer
 
-def train(dataset_name, output_dir):
+    # LoRA config based on QLoRA paper
+    peft_config = LoraConfig(
+        lora_alpha=16,
+        lora_dropout=0.1,
+        r=64,
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
+    model = prepare_model_for_kbit_training(base_model)
+    model = get_peft_model(model, peft_config)
+
+    return model, tokenizer, peft_config
+
+
+def load_lora_model_and_tokenizer():
+    """
+    Load model and tokenizer
+    """
+    base_model_name = "NousResearch/Llama-2-7b-hf"
+
+
+    # Load model and tokenizer
+    base_model = AutoModelForCausalLM.from_pretrained(
+        base_model_name,
+        use_flash_attention_2=True,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        trust_remote_code=True,
+        token='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'
+        )
+    base_model.config.use_cache = False
+    # More info: https://github.com/huggingface/transformers/pull/24906
+    base_model.config.pretraining_tp = 1
+
+    tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"
+
+    # LoRA config based on QLoRA paper
+    peft_config = LoraConfig(
+        inference_mode=False,
+        lora_alpha=32,
+        lora_dropout=0.1,
+        r=8,
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
+    # base_model = prepare_model_for_kbit_training(base_model)
+    base_model = get_peft_model(base_model, peft_config)
+    # base_model.print_trainable_parameters()
+
+    return base_model, tokenizer, peft_config
+
+def train(dataset_name, output_dir, batch_size):
     """
     Load dataset
     """
@@ -63,22 +115,11 @@ def train(dataset_name, output_dir):
     """
     Prepare model for training
     """
-    model, tokenizer = load_model_and_tokenizer()
-    # LoRA config based on QLoRA paper
-    peft_config = LoraConfig(
-        lora_alpha=16,
-        lora_dropout=0.1,
-        r=64,
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
-    model = prepare_model_for_kbit_training(model)
-    model = get_peft_model(model, peft_config)
+    model, tokenizer, peft_config = load_lora_model_and_tokenizer()
 
-
-    batch_size = 100
     training_args = TrainingArguments(
         output_dir=output_dir,
+        do_train=True,
         num_train_epochs=3,
         gradient_accumulation_steps=2,
         gradient_checkpointing=True,
@@ -111,6 +152,7 @@ if __name__ == "__main__":
     parser.add_argument('dataset', type=str, help='which dataset')
     parser.add_argument('checkpoint_dir', type=str, help='Directory for checkpoints')
     parser.add_argument('run_name', type=str, help='run_name')
+    parser.add_argument('--batchSize', type=int, default=8, help='run_name')
     args = parser.parse_args()
     wandb.init(name=args.run_name)
-    train(args.dataset, args.checkpoint_dir)
+    train(args.dataset, args.checkpoint_dir, args.batchSize)

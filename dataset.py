@@ -100,4 +100,4 @@ def generate_scientific_notation_dataset():
     dataset = datasets.Dataset.from_generator(generate_texts)
     dataset.push_to_hub('yuanbiao/imdb-card-pred-science', token='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')
 if __name__ == "__main__":
-    generate_scientific_notation_dataset()
+    generate_decimal_dataset()
