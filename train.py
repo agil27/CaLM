@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import datasets
 import argparse
+import wandb
 from huggingface_hub import notebook_login
 # Use token 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
 # notebook_login()
@@ -78,7 +79,6 @@ def train(dataset_name, output_dir):
     batch_size = 100
     training_args = TrainingArguments(
         output_dir=output_dir,
-        per_device_train_batch_size=batch_size,
         num_train_epochs=3,
         gradient_accumulation_steps=2,
         gradient_checkpointing=True,
@@ -89,6 +89,7 @@ def train(dataset_name, output_dir):
         max_grad_norm=0.3,
         warmup_ratio=0.03
     )
+    training_args = training_args.set_dataloader(train_batch_size=batch_size)
 
     training_args = training_args.set_save(strategy="steps", steps=100)
     trainer = SFTTrainer(
@@ -109,5 +110,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script with two string parameters')
     parser.add_argument('dataset', type=str, help='which dataset')
     parser.add_argument('checkpoint_dir', type=str, help='Directory for checkpoints')
+    parser.add_argument('run_name', type=str, help='run_name')
     args = parser.parse_args()
+    wandb.init(name=args.run_name)
     train(args.dataset, args.checkpoint_dir)
