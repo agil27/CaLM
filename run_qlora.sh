@@ -1,0 +1,9 @@
+batch_size=(100 50 20 10)
+
+# Iterate over array elements
+for bs in "${batch_size[@]}"; do
+    echo "Try batch size $bs"
+    python3 train.py vic0428/imdb-card-pred-binary results_nov10_binary-bs$bs results_nov10_binary-bs$bs --batchSize $bs
+    python3 train.py vic0428/imdb-card-pred-decimal results_nov10_binary-bs$bs results_nov10_binary-bs$bs --batchSize $bs
+    python3 train.py vic0428/imdb-card-pred-science results_nov10_binary-bs$bs results_nov10_binary-bs$bs --batchSize $bs
+    done

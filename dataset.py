@@ -12,8 +12,8 @@ import torch
 from transformers import AutoModelForCausalLM, BitsAndBytesConfig, AutoTokenizer, TrainingArguments
 from peft import LoraConfig
 from trl import SFTTrainer
+from lib import TOKEN
 
-token = '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'
 def generate_decimal_dataset():
     # Process the data into HuggingFace dataset
     data = pd.read_csv('train.csv', sep='#', header=None)
@@ -40,7 +40,7 @@ def generate_decimal_dataset():
     ### Cardinality: %d''' % (projections + predicates_str, row[3])).replace('\n', '')}
 
     dataset = datasets.Dataset.from_generator(generate_texts)
-    dataset.push_to_hub('vic0428/imdb-card-pred-decimal', token=token)
+    dataset.push_to_hub('vic0428/imdb-card-pred-decimal', token=TOKEN)
 
 def generate_binary_dataset():
     # Process the data into HuggingFace dataset
@@ -69,7 +69,7 @@ def generate_binary_dataset():
             yield sample
 
     dataset = datasets.Dataset.from_generator(generate_texts)
-    dataset.push_to_hub('vic0428/imdb-card-pred-binary', token=token)
+    dataset.push_to_hub('vic0428/imdb-card-pred-binary', token=TOKEN)
 
 def generate_scientific_notation_dataset():
     # Process the data into HuggingFace dataset
@@ -98,6 +98,7 @@ def generate_scientific_notation_dataset():
             yield sample
 
     dataset = datasets.Dataset.from_generator(generate_texts)
-    dataset.push_to_hub('vic0428/imdb-card-pred-science', token=token)
+    dataset.push_to_hub('vic0428/imdb-card-pred-science', token=TOKEN)
 if __name__ == "__main__":
-    generate_decimal_dataset()
+    generate_binary_dataset()
+    generate_scientific_notation_dataset()

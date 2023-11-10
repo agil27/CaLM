@@ -18,6 +18,7 @@ from transformers import AutoModelForCausalLM, BitsAndBytesConfig, AutoTokenizer
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
 from peft import LoraConfig
 from trl import SFTTrainer
+from lib import TOKEN
 
 
 def load_qlora_model_and_tokenizer():
@@ -41,7 +42,7 @@ def load_qlora_model_and_tokenizer():
         use_flash_attention_2=True,
         device_map="auto",
         trust_remote_code=True,
-        token='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'
+        token=TOKEN
         )
     base_model.config.use_cache = False
     # More info: https://github.com/huggingface/transformers/pull/24906
@@ -80,7 +81,7 @@ def load_lora_model_and_tokenizer():
         torch_dtype=torch.bfloat16,
         device_map="auto",
         trust_remote_code=True,
-        token='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'
+        token=TOKEN
         )
     base_model.config.use_cache = False
     # More info: https://github.com/huggingface/transformers/pull/24906
@@ -120,7 +121,7 @@ def load_model_and_tokenizer():
         torch_dtype=torch.bfloat16,
         device_map="auto",
         trust_remote_code=True,
-        token='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'
+        token=TOKEN
         )
     base_model.config.use_cache = False
     # More info: https://github.com/huggingface/transformers/pull/24906
@@ -156,13 +157,13 @@ def train(dataset_name, output_dir, batch_size):
     Prepare model for training
     """
     # model, tokenizer, peft_config = load_lora_model_and_tokenizer()
-    model, tokenizer, peft_config = load_model_and_tokenizer()
+    model, tokenizer, peft_config = load_qlora_model_and_tokenizer()
 
     training_args = TrainingArguments(
         output_dir=output_dir,
         do_train=True,
         num_train_epochs=3,
-        gradient_accumulation_steps=2,
+        gradient_accumulation_steps=1,
         gradient_checkpointing=True,
         optim="paged_adamw_32bit",
         logging_steps=10,
@@ -173,7 +174,7 @@ def train(dataset_name, output_dir, batch_size):
     )
     training_args = training_args.set_dataloader(train_batch_size=batch_size)
 
-    training_args = training_args.set_save(strategy="steps", steps=100)
+    # training_args = training_args.set_save(strategy="steps", steps=100)
     trainer = SFTTrainer(
         model=model,
         train_dataset=dataset,
