@@ -2,4 +2,7 @@ wandb/**
 results*/**
 *.csv
 *.log
-**pycache**/**
+.DS_Store
+*.pyc
+*.pyo
+__pycache__/
