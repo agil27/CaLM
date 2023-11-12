@@ -1,13 +1,12 @@
 io:
   dataset_type: science
-  output_dir: results_nov10_binary-bs10
-  checkpoint_dir: results_nov10_binary-bs
-  run_tag: vic-fasrc-run
+  output_dir: snapshots
+  run_tag: yuanbiao-colab-test
 training:
   num_train_epochs: 3
-  gradient_accumutation_steps: 1
+  gradient_accumutation_steps: 2
   learning_rate: 0.0002
-  batch_size: 10
+  batch_size: 4
 model:
   model_name: NousResearch/Llama-2-7b-hf
   adapter: qlora
