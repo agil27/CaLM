@@ -33,31 +33,44 @@ def print_qerror_stats(qerror_list):
     print("\t95th percentile:", percentile_95)
     pass
 
-def extract_cardinality(text):
+def extract_cardinality(text, mode='decimal'):
     """
     This helper function is to extract the output cardinality from LLM output
     """
-    i = 0
-    while i < len(text) and (not (text[i] >= '0' and text[i] <= '9')):
-        i += 1
+    if mode == 'decimal' or 'binary':
+        # Calculate the cardinality when using decimal or binary represetnation
+        upper_char = '9' if mode == 'decimal' else '1'
+        base = 10 if mode == 'decimal' else 2
+        i = 0
+        # Skip characters that are not digits
+        while i < len(text) and (not (text[i] >= '0' and text[i] <= upper_char)):
+            i += 1
     
-    cardinality = 0
-    while i < len(text):
-        if text[i] >= '0' and text[i] <= '9':
-            cardinality = 10 * cardinality + (ord(text[i]) - ord('0'))
-        else:
-            break
-        i += 1
-    return cardinality
+        cardinality = 0
+        # Start to calculate the cardinality
+        while i < len(text):
+            if text[i] >= '0' and text[i] <= upper_char :
+                cardinality = base * cardinality + (ord(text[i]) - ord('0'))
+            else:
+                break
+            i += 1
+        return cardinality
+    elif mode == 'science':
+        pass
+    else:
+        raise RuntimeError("Unsupported represetation for cardinality")
 
-def test(checkpoint_dir, device="cuda:0"):
+def test(checkpoint_dir, dataset_name, mode, device="cuda:0"):
+    # Load model from the checkpoint
     model = AutoPeftModelForCausalLM.from_pretrained(checkpoint_dir, 
                                                      device_map=device, 
                                                      torch_dtype=torch.bfloat16)
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
-    dataset_name = "yuanbiao/imdb-card-pred"
+
+    # Load the dataset
     dataset = load_dataset(dataset_name, split="train")
     qerror_list = []
+
     step = 1
     for data in dataset:
         text = data['text']
@@ -75,7 +88,7 @@ def test(checkpoint_dir, device="cuda:0"):
 
 
         output_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        output_cardinality = extract_cardinality(output_text[len(prompt): ])
+        output_cardinality = extract_cardinality(output_text[len(prompt): ], mode)
 
         print(f"\ngt_cardinality: {gt_cardinality}, output_cardinality: {output_cardinality}")
         print(f"\tgt_text: {text}") 
@@ -93,8 +106,14 @@ def test(checkpoint_dir, device="cuda:0"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script with two string parameters')
-    parser.add_argument('checkpoint_dir', type=str, help='Directory for checkpoints')
-    parser.add_argument('-gpu_device', type=str, help='GPU device', default="cuda:0")
+    parser.add_argument('--checkpoint', type=str, help='Directory for checkpoints', default='result')
+    parser.add_argument('--dataset', type=str, help='dataset', default="vic0428/imdb-card-pred-decimal")
+    parser.add_argument('--mode', type=str, help='cardinality represetation', default="binary")
+    parser.add_argument('--device', type=str, help='GPU device', default="cuda:0")
 
     args = parser.parse_args()
-    test(args.checkpoint_dir, args.gpu_device)
+    # Start the testing 
+    test(args.checkpoint,
+         args.dataset,
+         args.mode,
+         args.device)
