@@ -1,6 +1,6 @@
 from easydict import EasyDict as edict
 from yaml import safe_load
-import datetime
+from datetime import datetime
 
 
 def load_config(config_path: str) -> edict:
