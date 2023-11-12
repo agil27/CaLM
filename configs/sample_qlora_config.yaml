@@ -1,0 +1,16 @@
+io:
+  dataset_name: vic0428/imdb-card-pred-science
+  output_dir: results_nov10_binary-bs10
+  checkpoint_dir: results_nov10_binary-bs
+  run_name:
+training:
+  num_train_epochs: 3
+  gradient_accumutation_steps: 1
+  learning_rate: 0.0002
+  batch_size: 10
+model:
+  model_name: NousResearch/Llama-2-7b-hf
+  adapter: qlora
+misc:
+  seed: 42
+  token: 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
