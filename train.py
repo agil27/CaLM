@@ -67,52 +67,11 @@ def load_qlora_model_and_tokenizer():
     return model, tokenizer, peft_config
 
 
-def load_lora_model_and_tokenizer():
-    """
-    Load model and tokenizer with LoRA
-    """
-    base_model_name = "NousResearch/Llama-2-7b-hf"
-
-
-    # Load model and tokenizer
-    base_model = AutoModelForCausalLM.from_pretrained(
-        base_model_name,
-        use_flash_attention_2=True,
-        torch_dtype=torch.bfloat16,
-        device_map="auto",
-        trust_remote_code=True,
-        token=TOKEN
-        )
-    base_model.config.use_cache = False
-    # More info: https://github.com/huggingface/transformers/pull/24906
-    base_model.config.pretraining_tp = 1
-
-    tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.padding_side = "right"
-
-    # LoRA config based on QLoRA paper
-    peft_config = LoraConfig(
-        inference_mode=False,
-        lora_alpha=32,
-        lora_dropout=0.1,
-        r=8,
-        bias="none",
-        task_type="CAUSAL_LM",
-    )
-    # base_model = prepare_model_for_kbit_training(base_model)
-    base_model = get_peft_model(base_model, peft_config)
-    # base_model.print_trainable_parameters()
-
-    return base_model, tokenizer, peft_config
-
-
 def load_model_and_tokenizer():
     """
-    Load model and tokenizer
+    Load model and tokenizer (fully fine-tune)
     """
     base_model_name = "NousResearch/Llama-2-7b-hf"
-
 
     # Load model and tokenizer
     base_model = AutoModelForCausalLM.from_pretrained(
@@ -130,23 +89,11 @@ def load_model_and_tokenizer():
     tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
-
-    # LoRA config based on QLoRA paper
-    # peft_config = LoraConfig(
-    #     inference_mode=False,
-    #     lora_alpha=32,
-    #     lora_dropout=0.1,
-    #     r=8,
-    #     bias="none",
-    #     task_type="CAUSAL_LM",
-    # )
-    # base_model = prepare_model_for_kbit_training(base_model)
-    # base_model = get_peft_model(base_model, peft_config)
-    # base_model.print_trainable_parameters()
 
     return base_model, tokenizer, None
 
-def train(dataset_name, output_dir, batch_size):
+
+def train(dataset_name, output_dir, batch_size, mode):
     """
     Load dataset
     """
@@ -156,8 +103,12 @@ def train(dataset_name, output_dir, batch_size):
     """
     Prepare model for training
     """
-    # model, tokenizer, peft_config = load_lora_model_and_tokenizer()
-    model, tokenizer, peft_config = load_qlora_model_and_tokenizer()
+    if mode == "qlora":
+        model, tokenizer, peft_config = load_qlora_model_and_tokenizer()
+    elif mode == "full":
+        model, tokenizer, peft_config = load_model_and_tokenizer()
+    else:
+        raise RuntimeError("Not recongnize mode")
 
     training_args = TrainingArguments(
         output_dir=output_dir,
@@ -194,7 +145,15 @@ if __name__ == "__main__":
     parser.add_argument('dataset', type=str, help='which dataset')
     parser.add_argument('checkpoint_dir', type=str, help='Directory for checkpoints')
     parser.add_argument('run_name', type=str, help='run_name')
-    parser.add_argument('--batchSize', type=int, default=8, help='run_name')
+    parser.add_argument('--batchSize', type=int, default=8, help='batch size')
+    parser.add_argument('--mode', type=str, default="qlora", help='qlora or fully-fine-tune')
     args = parser.parse_args()
+
+    # Initialize run name on wandb 
     wandb.init(name=args.run_name)
-    train(args.dataset, args.checkpoint_dir, args.batchSize)
+
+    # Start the training process
+    train(args.dataset, 
+          args.checkpoint_dir, 
+          args.batchSize,
+          args.mode)
