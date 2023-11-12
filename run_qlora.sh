@@ -1,4 +1,5 @@
-batch_size=(20 10)
+# We know that batch size 20 can converge
+batch_size=(20)
 
 # Iterate over array elements
 for bs in "${batch_size[@]}"; do
