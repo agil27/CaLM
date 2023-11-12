@@ -22,7 +22,7 @@ def print_qerror_stats(qerror_list):
     qerror_median = np.median(qerror_list)
     print("\tmedian", qerror_median)
     qerror_max = np.max(qerror_list)
-    print("\max", qerror_max)
+    print("\tmax", qerror_max)
 
     # Computing the 90th percentile
     percentile_90 = np.percentile(qerror_list, 90)
@@ -74,9 +74,12 @@ def test(checkpoint_dir, device="cuda:0"):
             pad_token_id=tokenizer.eos_token_id)
 
 
-        output_text = tokenizer.decode(outputs[0], skip_special_tokens=True)[len(prompt):]
-        output_cardinality = extract_cardinality(output_text)
+        output_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        output_cardinality = extract_cardinality(output_text[len(prompt): ])
 
+        print(f"\ngt_cardinality: {gt_cardinality}, output_cardinality: {output_cardinality}")
+        print(f"\tgt_text: {text}") 
+        print(f"\toutput_text: {output_text}") 
         # Calculate qerror
         qerror = calc_qerror(output_cardinality, gt_cardinality)
         qerror_list.append(qerror)
@@ -91,7 +94,7 @@ def test(checkpoint_dir, device="cuda:0"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script with two string parameters')
     parser.add_argument('checkpoint_dir', type=str, help='Directory for checkpoints')
-    parser.add_argument('gpu_device', type=str, help='GPU device')
+    parser.add_argument('-gpu_device', type=str, help='GPU device', default="cuda:0")
 
     args = parser.parse_args()
     test(args.checkpoint_dir, args.gpu_device)
