@@ -60,6 +60,7 @@ def extract_cardinality(text, mode='decimal'):
     else:
         raise RuntimeError("Unsupported represetation for cardinality")
 
+
 def test(checkpoint_dir, dataset_name, mode, device="cuda:0"):
     # Load model from the checkpoint
     model = AutoPeftModelForCausalLM.from_pretrained(checkpoint_dir, 
@@ -75,7 +76,7 @@ def test(checkpoint_dir, dataset_name, mode, device="cuda:0"):
     for data in dataset:
         text = data['text']
         tokens = text.split(' ')
-        gt_cardinality = int(tokens[-1])
+        gt_cardinality = extract_cardinality(tokens[-1], mode)
 
         # Process prompts
         prompt = " ".join(tokens[:-1]) + " "
@@ -89,8 +90,8 @@ def test(checkpoint_dir, dataset_name, mode, device="cuda:0"):
 
         output_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
         output_cardinality = extract_cardinality(output_text[len(prompt): ], mode)
-
-        print(f"\ngt_cardinality: {gt_cardinality}, output_cardinality: {output_cardinality}")
+        print(f"\nTest sample {step}/{len(dataset)}")
+        print(f"\tgt_cardinality: {gt_cardinality}, output_cardinality: {output_cardinality}")
         print(f"\tgt_text: {text}") 
         print(f"\toutput_text: {output_text}") 
         # Calculate qerror
