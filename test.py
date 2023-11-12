@@ -100,7 +100,7 @@ def test(checkpoint_dir, dataset_name, mode, device="cuda:0"):
 
         step += 1
         if step % 10 == 0:
-            print(f"{step} / {len(data)}")
+            print(f"\nFor the first {step} samples, here is the qerror stats")
             print_qerror_stats(qerror_list)
 
 
