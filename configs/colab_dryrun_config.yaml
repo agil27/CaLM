@@ -4,7 +4,7 @@ io:
   run_tag: yuanbiao-colab-test
 training:
   num_train_epochs: 3
-  gradient_accumutation_steps: 2
+  gradient_accumulation_steps: 2
   learning_rate: 0.0002
   batch_size: 4
 model:

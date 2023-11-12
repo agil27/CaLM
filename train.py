@@ -8,7 +8,12 @@ from easydict import EasyDict as edict
 from datasets import load_dataset
 from transformers import TrainingArguments
 from trl import SFTTrainer
-from utils import load_config, dataset_name_from_dataset_type, run_name_from_config
+from utils import (
+    load_config,
+    dataset_name_from_dataset_type,
+    run_name_from_config,
+    dump_config,
+)
 from models import (
     load_llm_from_huggingface,
     lora_wrapper,
@@ -76,5 +81,5 @@ if __name__ == "__main__":
     output_dir = os.path.join(config.io.output_dir, run_name)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    os.copy(args.config, os.path.join(output_dir, "config_snapshot.yaml"))
+    dump_config(args.config, os.path.join(output_dir, "config_snapshot.yaml"))
     train(config, output_dir)
