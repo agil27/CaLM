@@ -2,6 +2,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
 from peft import LoraConfig
+from transformers import BitsAndBytesConfig
 from lib import TOKEN
 
 
@@ -16,14 +17,24 @@ def default_lora_config() -> LoraConfig:
         task_type="CAUSAL_LM",
     )
 
+def default_quantization_config() -> BitsAndBytesConfig:
+    # Quantization config in QLoRA paper
+    return BitsAndBytesConfig(
+        load_in_4bit=True, 
+        bnb_4bit_use_double_quant=True, 
+        bnb_4bit_quant_type="nf4", 
+        bnb_4bit_compute_dtype=torch.bfloat16
+    )
 
-def load_llm_from_huggingface(model_name: str) -> dict:
+
+def load_llm_from_huggingface(model_name: str, qconfig: BitsAndBytesConfig=None) -> dict:
     """
     Load LLM and tokenizer from Huggingface by model name.
     Will return a dictionary with keys "model" and "tokenizer".
     """
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
+        quantization_config=qconfig,
         use_flash_attention_2=True,
         torch_dtype=torch.bfloat16,
         device_map="auto",

@@ -1,0 +1,15 @@
+io:
+  dataset_type: science
+  output_dir: test_bs20_checkpoint
+  run_tag: test_bs20_run
+training:
+  num_train_epochs: 3
+  gradient_accumulation_steps: 1
+  learning_rate: 0.0002
+  batch_size: 20
+model:
+  model_name: NousResearch/Llama-2-7b-hf
+  adapter: qlora
+misc:
+  seed: 42
+  token: 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

@@ -19,6 +19,7 @@ from models import (
     lora_wrapper,
     qlora_wrapper,
     default_lora_config,
+    default_quantization_config
 )
 
 
@@ -39,16 +40,17 @@ def train(config: edict, output_dir: str):
         bf16=True,
         max_grad_norm=0.3,
         warmup_ratio=0.03,
+        save_total_limit=5,
     )
     training_args = training_args.set_dataloader(
-        train_batch_size=config.training_batch_size
+        train_batch_size=config.training.batch_size
     )
 
-    model_dict = load_llm_from_huggingface(config.training.model_name)
-    if config.model.adapter == "lora":
-        model_dict = lora_wrapper(model_dict, default_lora_config())
-    elif config.model.adapter == "qlora":
+    if config.model.adapter == "qlora":
+        model_dict = load_llm_from_huggingface(config.model.model_name, default_quantization_config())
         model_dict = qlora_wrapper(model_dict, default_lora_config())
+    else:
+        raise RuntimeError("Unsupported adaptor")
 
     model = model_dict["model"]
     peft_config = model_dict["lora_config"]
@@ -66,7 +68,7 @@ def train(config: edict, output_dir: str):
     trainer.train()
 
     final_output_dir = os.path.join(output_dir, "final_checkpoint")
-    trainer.model.save_pretrained(final_output_dir)
+    trainer.save_pretrained(final_output_dir)
 
 
 if __name__ == "__main__":
