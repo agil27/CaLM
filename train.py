@@ -68,7 +68,7 @@ def train(config: edict, output_dir: str):
     trainer.train()
 
     final_output_dir = os.path.join(output_dir, "final_checkpoint")
-    trainer.save_pretrained(final_output_dir)
+    trainer.save_model(final_output_dir)
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ def dump_config(config: edict, config_path: str) -> edict:
 
 
 def run_name_from_config(config: edict) -> str:
-    formatted_datetime = datetime.now().strftime("%Y%m%d%H%M%S")
+    formatted_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     return "-".join(
         [
             f"{config.io.run_tag}",
