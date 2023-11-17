@@ -31,7 +31,7 @@ def train(config: edict, output_dir: str):
         optim="paged_adamw_32bit",
         logging_steps=10,
         learning_rate=config.training.learning_rate,
-        bf16=True,
+        bf16=config.model.use_bf16,
         max_grad_norm=0.3,
         warmup_ratio=0.03,
         save_total_limit=5,
