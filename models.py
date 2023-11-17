@@ -82,5 +82,5 @@ def load_model_from_config(model_config: EasyDict):
         torch_dtype=torch_dtype,
         use_flash_attention2=model_config.use_flash_attention2,
         lora_config=lora_config,
-        quantization_config=quantization_config,
+        qconfig=quantization_config,
     )
