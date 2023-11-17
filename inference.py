@@ -37,13 +37,12 @@ class BinaryInference(CardinalityInference):
     def __init__(self, model, tokenizer, device="cuda:0"):
         super(BinaryInference, self).__init__(model, tokenizer, device="cuda:0")
     
-    def inference(self, prompt):
-        output_text = self.get_output_text(prompt)
-
+    def decode(self, output_text):
         # A regex pattern that matches the binary format
         binary_pattern = re.compile(r"([0-1]+)")
 
         # Find the matching characters
         binary_str = binary_pattern.match(output_text).groups[0]
+
         
 

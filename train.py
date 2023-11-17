@@ -72,5 +72,5 @@ if __name__ == "__main__":
     output_dir = os.path.join(config.io.output_dir, run_name)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    dump_config(args.config, os.path.join(output_dir, "config_snapshot.yaml"))
+    dump_config(config, os.path.join(output_dir, "config_snapshot.yaml"))
     train(config, output_dir)
