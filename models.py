@@ -1,9 +1,9 @@
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import LoraConfig
-from transformers import BitsAndBytesConfig
-from lib import TOKEN
 from easydict import EasyDict
+from lib import TOKEN
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from transformers import (AutoModelForCausalLM, AutoTokenizer,
+                          BitsAndBytesConfig)
 
 
 def default_lora_config() -> LoraConfig:
@@ -43,7 +43,6 @@ def peft_model(
     """
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        peft_config=lora_config,
         quantization_config=qconfig,
         use_flash_attention_2=use_flash_attention2,
         torch_dtype=torch_dtype,
@@ -61,6 +60,12 @@ def peft_model(
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
+    if lora_config is not None:
+        model = get_peft_model(model)
+    
+    if qconfig is not None:
+        model = prepare_model_for_kbit_training(model, qconfig)
+        
     return {"model": model, "tokenizer": tokenizer, "peft_config": lora_config}
 
 
