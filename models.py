@@ -61,11 +61,11 @@ def peft_model(
     tokenizer.padding_side = "right"
 
     if lora_config is not None:
-        model = get_peft_model(model)
+        model = get_peft_model(model, lora_config)
     
     if qconfig is not None:
         model = prepare_model_for_kbit_training(model, qconfig)
-        
+
     return {"model": model, "tokenizer": tokenizer, "peft_config": lora_config}
 
 
