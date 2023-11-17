@@ -1,9 +1,8 @@
 import torch
 from easydict import EasyDict
 from lib import TOKEN
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from transformers import (AutoModelForCausalLM, AutoTokenizer,
-                          BitsAndBytesConfig)
+from peft import LoraConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 
 def default_lora_config() -> LoraConfig:
@@ -53,7 +52,7 @@ def peft_model(
 
     model.config.use_cache = False
     model.enable_input_require_grads()
-    
+
     # More info: https://github.com/huggingface/transformers/pull/24906
     model.config.pretraining_tp = 1
 

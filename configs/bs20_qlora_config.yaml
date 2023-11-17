@@ -7,7 +7,7 @@ training:
   gradient_accumulation_steps: 1
   learning_rate: 0.0002
   batch_size: 20
-  optimizer: "adamw_torch"
+  optimizer: "paged_adamw_32bit"
 model:
   use_bf16: true
   use_flash_attention2: true
