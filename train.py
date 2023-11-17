@@ -28,7 +28,7 @@ def train(config: edict, output_dir: str):
         num_train_epochs=config.training.num_train_epochs,
         gradient_accumulation_steps=config.training.gradient_accumulation_steps,
         gradient_checkpointing=True,
-        optim="paged_adamw_32bit",
+        optim=config.training.optimizer,
         logging_steps=10,
         learning_rate=config.training.learning_rate,
         bf16=config.model.use_bf16,

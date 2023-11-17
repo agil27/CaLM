@@ -52,7 +52,8 @@ def peft_model(
     )
 
     model.config.use_cache = False
-
+    model.enable_input_require_grads()
+    
     # More info: https://github.com/huggingface/transformers/pull/24906
     model.config.pretraining_tp = 1
 
@@ -77,6 +78,7 @@ def load_model_from_config(model_config: EasyDict):
     torch_dtype = torch.bfloat16 if model_config.use_bf16 else "auto"
 
     lora_config = None if model_config.adapter == "none" else default_lora_config()
+
     return peft_model(
         model_name=model_config.model_name,
         torch_dtype=torch_dtype,
