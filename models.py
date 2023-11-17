@@ -1,9 +1,9 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
 from peft import LoraConfig
 from transformers import BitsAndBytesConfig
 from lib import TOKEN
+from easydict import EasyDict
 
 
 def default_lora_config() -> LoraConfig:
@@ -17,25 +17,33 @@ def default_lora_config() -> LoraConfig:
         task_type="CAUSAL_LM",
     )
 
+
 def default_quantization_config() -> BitsAndBytesConfig:
     # Quantization config in QLoRA paper
     return BitsAndBytesConfig(
-        load_in_4bit=True, 
-        bnb_4bit_use_double_quant=True, 
-        bnb_4bit_quant_type="nf4", 
-        bnb_4bit_compute_dtype=torch.bfloat16
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
     )
 
 
-def load_llm_from_huggingface(model_name: str, qconfig: BitsAndBytesConfig=None) -> dict:
+def peft_model(
+    model_name: str,
+    use_flash_attention2: bool = True,
+    lora_config: LoraConfig = None,
+    qconfig: BitsAndBytesConfig = None,
+) -> dict:
     """
     Load LLM and tokenizer from Huggingface by model name.
-    Will return a dictionary with keys "model" and "tokenizer".
+    Will return a dictionary with keys "model", "tokenizer" and "peft_config".
+    For LoRA and QLoRA models, the peft_config will be a LoraConfig object. Otherwise it will be none.
+    For QLora the quantization config will be a BitsAndBytesConfig object.
     """
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         quantization_config=qconfig,
-        use_flash_attention_2=True,
+        use_flash_attention_2=use_flash_attention2,
         torch_dtype=torch.bfloat16,
         device_map="auto",
         trust_remote_code=True,
@@ -51,31 +59,23 @@ def load_llm_from_huggingface(model_name: str, qconfig: BitsAndBytesConfig=None)
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
-    return {"model": model, "tokenizer": tokenizer}
+    return {"model": model, "tokenizer": tokenizer, "peft_config": lora_config}
 
 
-def lora_wrapper(base_model_dict: dict, lora_config: LoraConfig) -> dict:
-    """
-    Wrap the model with LoRA adapter to make it partially trainable.
-    Will return a dictionary with keys "model", "tokenizer" and "lora_config".
-    """
-    return {
-        "model": get_peft_model(base_model_dict["model"], lora_config),
-        "tokenizer": base_model_dict["tokenizer"],
-        "lora_config": lora_config,
-    }
+def load_model_from_config(model_config: EasyDict):
+    assert model_config.adapter in [
+        "none",
+        "lora",
+        "qlora",
+    ], "model adapter not supported. Must be one of the following: qlora, lora or none."
 
-
-def qlora_wrapper(base_model_dict: dict, lora_config: LoraConfig):
-    """
-    Wrap the model with QLoRA adapter to make it partially trainable.
-    QLora will use a 4-bit quantization to reduce training overheads.
-    Will return a dictionary with keys "model", "tokenizer" and "lora_config".
-    """
-    return {
-        "model": get_peft_model(
-            prepare_model_for_kbit_training(base_model_dict["model"]), lora_config
-        ),
-        "tokenizer": base_model_dict["tokenizer"],
-        "lora_config": lora_config,
-    }
+    quantization_config = (
+        default_quantization_config() if model_config.adapter == "qlora" else None
+    )
+    lora_config = None if model_config.adapter == "none" else default_lora_config()
+    return peft_model(
+        model_config.model_name,
+        model_config.use_flash_attention2,
+        lora_config,
+        quantization_config,
+    )

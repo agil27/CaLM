@@ -14,13 +14,7 @@ from utils import (
     run_name_from_config,
     dump_config,
 )
-from models import (
-    load_llm_from_huggingface,
-    lora_wrapper,
-    qlora_wrapper,
-    default_lora_config,
-    default_quantization_config
-)
+from models import load_model_from_config
 
 
 def train(config: edict, output_dir: str):
@@ -46,12 +40,7 @@ def train(config: edict, output_dir: str):
         train_batch_size=config.training.batch_size
     )
 
-    if config.model.adapter == "qlora":
-        model_dict = load_llm_from_huggingface(config.model.model_name, default_quantization_config())
-        model_dict = qlora_wrapper(model_dict, default_lora_config())
-    else:
-        raise RuntimeError("Unsupported adaptor")
-
+    model_dict = load_model_from_config(config.model)
     model = model_dict["model"]
     peft_config = model_dict["lora_config"]
     tokenizer = model_dict["tokenizer"]

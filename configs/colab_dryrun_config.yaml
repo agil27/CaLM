@@ -8,8 +8,9 @@ training:
   learning_rate: 0.0002
   batch_size: 4
 model:
+  use_flash_attention2: false
   model_name: NousResearch/Llama-2-7b-hf
-  adapter: qlora
+  adapter: lora
 misc:
   seed: 42
   token: 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
