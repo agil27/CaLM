@@ -43,6 +43,7 @@ def peft_model(
     """
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
+        peft_config=lora_config,
         quantization_config=qconfig,
         use_flash_attention_2=use_flash_attention2,
         torch_dtype=torch_dtype,
