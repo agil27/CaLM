@@ -42,7 +42,7 @@ def train(config: edict, output_dir: str):
 
     model_dict = load_model_from_config(config.model)
     model = model_dict["model"]
-    peft_config = model_dict["lora_config"]
+    peft_config = model_dict["peft_config"]
     tokenizer = model_dict["tokenizer"]
 
     trainer = SFTTrainer(
