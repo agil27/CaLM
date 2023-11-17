@@ -60,9 +60,6 @@ def peft_model(
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
 
-    if lora_config is not None:
-        model = get_peft_model(model, lora_config)
-
     return {"model": model, "tokenizer": tokenizer, "peft_config": lora_config}
 
 
