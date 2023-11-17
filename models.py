@@ -30,6 +30,7 @@ def default_quantization_config() -> BitsAndBytesConfig:
 
 def peft_model(
     model_name: str,
+    torch_dtype: any = "auto",
     use_flash_attention2: bool = True,
     lora_config: LoraConfig = None,
     qconfig: BitsAndBytesConfig = None,
@@ -44,7 +45,7 @@ def peft_model(
         model_name,
         quantization_config=qconfig,
         use_flash_attention_2=use_flash_attention2,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch_dtype,
         device_map="auto",
         trust_remote_code=True,
         token=TOKEN,
@@ -72,10 +73,14 @@ def load_model_from_config(model_config: EasyDict):
     quantization_config = (
         default_quantization_config() if model_config.adapter == "qlora" else None
     )
+
+    torch_dtype = torch.bfloat16 if model_config.use_bf16 else "auto"
+
     lora_config = None if model_config.adapter == "none" else default_lora_config()
     return peft_model(
-        model_config.model_name,
-        model_config.use_flash_attention2,
-        lora_config,
-        quantization_config,
+        model_name=model_config.model_name,
+        torch_dtype=torch_dtype,
+        use_flash_attention2=model_config.use_flash_attention2,
+        lora_config=lora_config,
+        quantization_config=quantization_config,
     )
