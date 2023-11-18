@@ -46,6 +46,7 @@ class DecodeCardinalityPipeline(Pipeline):
             raw_inputs["prompt"], return_tensors=self.framework
         )
         model_inputs["true_cardinality"] = raw_inputs["true_cardinality"]
+        model_inputs["prompt"] = raw_inputs["prompt"]
         return model_inputs
 
     def _forward(self, model_inputs, **generate_kwargs):
@@ -66,12 +67,13 @@ class DecodeCardinalityPipeline(Pipeline):
     def postprocess(self, model_outputs, **generate_kwargs):
         decode_mode = generate_kwargs.pop("decode_mode", "decimal")
         estimated_cardinality = None
+        output_text = model_outputs["output_text"]
         if decode_mode == "binary":
-            estimated_cardinality = binary_decode(model_outputs)
+            estimated_cardinality = binary_decode(output_text)
         elif decode_mode == "decimal":
-            estimated_cardinality = decimal_decode(model_outputs)
+            estimated_cardinality = decimal_decode(output_text)
         elif decode_mode == "science":
-            estimated_cardinality = science_decode(model_outputs)
+            estimated_cardinality = science_decode(output_text)
         else:
             raise ValueError(
                 "Invalid decode mode. Should be one of decimal, binary or scientific."
