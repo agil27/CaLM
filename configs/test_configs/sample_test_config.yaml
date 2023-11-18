@@ -1,0 +1,11 @@
+io:
+  checkpoint_dir: checkpoint
+  dataset_prefix: vic0428/imdb-card-pred-
+  mode: science
+  output_step: 10
+  log_file: sample_test.csv
+inference:
+  use_bf16: false
+  device_map: auto
+  max_length: 10
+

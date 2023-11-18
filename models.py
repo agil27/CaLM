@@ -2,7 +2,7 @@ import torch
 from easydict import EasyDict
 from lib import TOKEN
 from peft import LoraConfig
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import AutoModelForCausalLM, AutoPeftModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 
 def default_lora_config() -> LoraConfig:
@@ -85,3 +85,14 @@ def load_model_from_config(model_config: EasyDict):
         lora_config=lora_config,
         qconfig=quantization_config,
     )
+
+
+def load_model_from_checkpoint(checkpoint_dir: str, use_bf16: bool=True, device_map: str="auto"):
+    model = AutoPeftModelForCausalLM.from_pretrained(
+        checkpoint_dir, device_map=device_map, torch_dtype=torch.bfloat16 if use_bf16 else "auto"
+    )
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
+    return {
+        "model": model,
+        "tokenizer": tokenizer
+    }

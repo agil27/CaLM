@@ -1,123 +1,46 @@
-import numpy as np
-
-from datasets import load_dataset
-import torch
-from transformers import AutoTokenizer
-from peft import AutoPeftModelForCausalLM
 import argparse
 
+from datasets import load_dataset
+from inference import DecodeCardinalityPipeline
+from utils import MetricLogger, load_config, load_model_from_checkpoint
 
-def calc_qerror(estimated_cardinality, actual_cardinality):
-    return max(
-        estimated_cardinality / actual_cardinality,
-        actual_cardinality / estimated_cardinality,
+
+def test(config):
+    model_dict = load_model_from_checkpoint(
+        config.io.checkpoint_dir,
+        device_map=config.inference.device_map,
+        use_bf16=config.inference.use_bf16,
+    )
+    model = model_dict["model"]
+    tokenizer = model_dict["tokenizer"]
+    dataset = load_dataset(config.io.dataset_name, split="test")
+
+    pipe = DecodeCardinalityPipeline(
+        model=model,
+        tokenizer=tokenizer,
+        max_length=config.inference.max_length,
+        decode_mode=config.io.mode,
+        device_map=config.inference.device_map,
     )
 
+    logger = MetricLogger(log_file=config.io.log_file, metric_name="qerror")
 
-def print_qerror_stats(qerror_list):
-    qerror_mean = np.mean(qerror_list)
-    print("\tmean", qerror_mean)
-    qerror_median = np.median(qerror_list)
-    print("\tmedian", qerror_median)
-    qerror_max = np.max(qerror_list)
-    print("\tmax", qerror_max)
-
-    # Computing the 90th percentile
-    percentile_90 = np.percentile(qerror_list, 90)
-    print("\t90th percentile:", percentile_90)
-
-    # Computing the 95th percentile
-    percentile_95 = np.percentile(qerror_list, 95)
-    print("\t95th percentile:", percentile_95)
-    pass
-
-
-def extract_cardinality(text, mode="decimal"):
-    """
-    This helper function is to extract the output cardinality from LLM output
-    """
-    if mode == "decimal" or "binary":
-        # Calculate the cardinality when using decimal or binary represetnation
-        upper_char = "9" if mode == "decimal" else "1"
-        base = 10 if mode == "decimal" else 2
-        i = 0
-        # Skip characters that are not digits
-        while i < len(text) and (not (text[i] >= "0" and text[i] <= upper_char)):
-            i += 1
-
-        cardinality = 0
-        # Start to calculate the cardinality
-        while i < len(text):
-            if text[i] >= "0" and text[i] <= upper_char:
-                cardinality = base * cardinality + (ord(text[i]) - ord("0"))
-            else:
-                break
-            i += 1
-        return cardinality
-    elif mode == "science":
-        pass
-    else:
-        raise RuntimeError("Unsupported represetation for cardinality")
-
-
-def test(checkpoint_dir, dataset_name, mode, device="cuda:0"):
-    # Load model from the checkpoint
-    model = AutoPeftModelForCausalLM.from_pretrained(
-        checkpoint_dir, device_map=device, torch_dtype=torch.bfloat16
-    )
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
-
-    # Load the dataset
-    dataset = load_dataset(dataset_name, split="train")
-    qerror_list = []
-
-    step = 1
-    for data in dataset:
-        text = data["text"]
-        tokens = text.split(" ")
-        gt_cardinality = extract_cardinality(tokens[-1], mode)
-
-        # Process prompts
-        prompt = " ".join(tokens[:-1]) + " "
-        inputs = tokenizer(prompt, return_tensors="pt").to(device)
-        outputs = model.generate(
-            input_ids=inputs["input_ids"],
-            attention_mask=inputs["attention_mask"],
-            max_new_tokens=50,
-            pad_token_id=tokenizer.eos_token_id,
-        )
-
-        output_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        output_cardinality = extract_cardinality(output_text[len(prompt) :], mode)
-        print(f"\nTest sample {step}/{len(dataset)}")
+    for i, data in enumerate(dataset):
+        outputs = pipe(data)
         print(
-            f"\tgt_cardinality: {gt_cardinality}, output_cardinality: {output_cardinality}"
+            logger.log_and_return_metric(
+                outputs["true_cardinality"],
+                outputs["estimated_cardinality"],
+                outputs[["qerror"]],
+            )
         )
-        print(f"\tgt_text: {text}")
-        print(f"\toutput_text: {output_text}")
-        # Calculate qerror
-        qerror = calc_qerror(output_cardinality, gt_cardinality)
-        qerror_list.append(qerror)
-
-        step += 1
-        if step % 10 == 0:
-            print(f"\nFor the first {step} samples, here is the qerror stats")
-            print_qerror_stats(qerror_list)
+        if (i + 1) % config.io.output_step == 0:
+            logger.print_running_stats()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script with two string parameters")
-    parser.add_argument(
-        "--checkpoint", type=str, help="Directory for checkpoints", default="result"
-    )
-    parser.add_argument(
-        "--dataset", type=str, help="dataset", default="vic0428/imdb-card-pred-decimal"
-    )
-    parser.add_argument(
-        "--mode", type=str, help="cardinality represetation", default="binary"
-    )
-    parser.add_argument("--device", type=str, help="GPU device", default="cuda:0")
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config", help="config YAML file path", required=True)
     args = parser.parse_args()
-    # Start the testing
-    test(args.checkpoint, args.dataset, args.mode, args.device)
+    config = load_config(args.config)
+    test(config)

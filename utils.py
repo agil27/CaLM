@@ -62,24 +62,22 @@ class MetricLogger:
     A logger that logs metrics and losses, as well as the ground truths and predictions in a CSV format.
     It can print out the metrics and running stats.
     """
-    def __init__(self, log_file: str, metric_func, metric_name: str="metric"):
+    def __init__(self, log_file: str, metric_name: str="metric"):
         self.log_file = log_file
         create_if_not_exists(self.log_file)
 
         with open(self.log_file, "a+") as f:
-            f.write("truth,pred,loss,metric\n")
+            f.write("truth,pred,%s\n" % (metric_name,))
 
-        self.metric_func = metric_func
         self.metric_name = metric_name
         self.metrics = []
         self.losses = []
 
-    def log_and_return_metric(self, truth, pred, loss):
+    def log_and_return_metric(self, truth, pred, metric):
         metric = self.metric_func(truth, pred)
-        self.losses.append(loss)
         self.metrics.append(metric)
 
-        log = "%d,%d,%.5f,%.5f\n" % (truth, pred, loss, metric)
+        log = "%d,%d,%.5f\n" % (truth, pred, metric)
 
         with open(self.log_file, "a+") as f:
             f.write(log)
@@ -95,5 +93,4 @@ class MetricLogger:
         print("95 percentile: ", np.percentile(data, 95))
 
     def print_stats(self):
-        self.print_running_stats(self.losses, "loss")
         self.print_running_stats(self.metric, self.metric_name)
