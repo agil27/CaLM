@@ -40,17 +40,19 @@ class DecodeCardinalityPipeline(Pipeline):
 
     def postprocess(self, model_outputs, **generate_kwargs):
         decode_mode = generate_kwargs.pop("decode_mode", "decimal")
+        cardinality = None
         if decode_mode == "binary":
-            return binary_decode(model_outputs)
+            cardinality = binary_decode(model_outputs)
         elif decode_mode == "decimal":
-            return decimal_decode(model_outputs)
+            cardinality = decimal_decode(model_outputs)
         elif decode_mode == "scientific":
-            return scientific_decode(model_outputs)
+            cardinality = scientific_decode(model_outputs)
         else:
             raise ValueError(
                 "Invalid decode mode. Should be one of decimal, binary or scientific."
             )
-            
+        return {"predicted_cardinality": cardinality}
+
 
 def binary_decode(output_text):
     # A regex pattern that matches the binary format
