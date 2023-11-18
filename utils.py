@@ -62,7 +62,7 @@ class MetricLogger:
     A logger that logs metrics and losses, as well as the ground truths and predictions in a CSV format.
     It can print out the metrics and running stats.
     """
-    def __init__(self, log_file: str, metric_func: function, metric_name: str="metric"):
+    def __init__(self, log_file: str, metric_func, metric_name: str="metric"):
         self.log_file = log_file
         create_if_not_exists(self.log_file)
 

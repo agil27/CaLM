@@ -11,7 +11,7 @@ def qerror(estimated_cardinality, actual_cardinality):
     )
 
 
-def DecodeCardinalityPipeline(Pipeline):
+class DecodeCardinalityPipeline(Pipeline):
     def _sanitize_parameters(self, **kwargs):
         preprocess_kwargs = {}
         forward_kwargs = {}
@@ -28,11 +28,11 @@ def DecodeCardinalityPipeline(Pipeline):
         return inputs
 
     def _forward(self, model_inputs, **generate_kwargs):
-        max_length = generate_kwargs.pop("max_length", 512)
+        max_length = generate_kwargs.pop("max_length", 50)
         outputs = self.model.generate(
             input_ids=model_inputs["input_ids"],
             attention_mask=model_inputs["attention_mask"],
-            max_new_tokens=50,
+            max_new_tokens=max_length,
             pad_token_id=self.tokenizer.eos_token_id,
         )
         output_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
