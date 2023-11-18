@@ -54,5 +54,5 @@ if __name__ == "__main__":
     config = populate_default_arguments_for_config(config)
     
     wandb.init(name=config.io.run_name)
-    dump_config(config, os.path.join(config.io.run_output_dir, "config_snapshot.yaml"))
+    dump_config(dict(config), os.path.join(config.io.run_output_dir, "config_snapshot.yaml"))
     train(config)

@@ -61,8 +61,8 @@ def peft_model(
     model.config.pretraining_tp = 1
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    tokenizer.pad_token = " "
-    tokenizer.padding_side = "left"
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"
 
     return {"model": model, "tokenizer": tokenizer, "peft_config": lora_config}
 
@@ -93,7 +93,8 @@ def load_model_from_config(config: EasyDict):
 
 
 def load_model_from_checkpoint(
-    checkpoint_dir: str, use_bf16: bool = True, device_map: str = "auto"
+    checkpoint_dir: str, use_bf16: bool = True, device_map: str = "auto",
+    pad_from_left: bool = True
 ):
     model = AutoPeftModelForCausalLM.from_pretrained(
         checkpoint_dir,
@@ -101,4 +102,9 @@ def load_model_from_checkpoint(
         torch_dtype=torch.bfloat16 if use_bf16 else "auto",
     )
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
+    
+    if pad_from_left:
+        tokenizer.pad_token = tokenizer.bos_token
+        tokenizer.padding_side = "left"
+
     return {"model": model, "tokenizer": tokenizer}

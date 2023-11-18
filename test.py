@@ -10,6 +10,7 @@ def test(config):
         config.io.checkpoint_dir,
         device_map=config.inference.device_map,
         use_bf16=config.inference.use_bf16,
+        pad_left=True
     )
     model = model_dict["model"]
     tokenizer = model_dict["tokenizer"]
