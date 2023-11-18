@@ -94,7 +94,7 @@ def load_model_from_config(config: EasyDict):
 
 def load_model_from_checkpoint(
     checkpoint_dir: str, use_bf16: bool = True, device_map: str = "auto",
-    pad_from_left: bool = True
+    pad_left: bool = True
 ):
     model = AutoPeftModelForCausalLM.from_pretrained(
         checkpoint_dir,
@@ -102,8 +102,8 @@ def load_model_from_checkpoint(
         torch_dtype=torch.bfloat16 if use_bf16 else "auto",
     )
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
-    
-    if pad_from_left:
+
+    if pad_left:
         tokenizer.pad_token = tokenizer.bos_token
         tokenizer.padding_side = "left"
 
