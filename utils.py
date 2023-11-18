@@ -121,7 +121,6 @@ class MetricLogger:
         self.losses = []
 
     def log_and_return_metric(self, truth, pred, metric):
-        metric = self.metric_func(truth, pred)
         self.metrics.append(metric)
 
         log = "%d,%d,%.5f\n" % (truth, pred, metric)
