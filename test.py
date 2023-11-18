@@ -15,7 +15,7 @@ def test(config):
     )
     model = model_dict["model"]
     tokenizer = model_dict["tokenizer"]
-    dataset = load_dataset(config.io.dataset_name, split="test")
+    dataset = load_dataset(config.io.dataset_prefix + config.io.mode, split="test")
 
     pipe = DecodeCardinalityPipeline(
         model=model,
