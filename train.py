@@ -40,7 +40,7 @@ def train(config: edict, output_dir: str):
         train_batch_size=config.training.batch_size
     )
 
-    model_dict = load_model_from_config(config.model)
+    model_dict = load_model_from_config(config)
     model = model_dict["model"]
     peft_config = model_dict["peft_config"]
     tokenizer = model_dict["tokenizer"]

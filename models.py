@@ -1,8 +1,12 @@
 import torch
 from easydict import EasyDict
-from lib import TOKEN
 from peft import LoraConfig
-from transformers import AutoModelForCausalLM, AutoPeftModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from transformers import (
+    AutoModelForCausalLM,
+    AutoPeftModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+)
 
 
 def default_lora_config() -> LoraConfig:
@@ -29,6 +33,7 @@ def default_quantization_config() -> BitsAndBytesConfig:
 
 def peft_model(
     model_name: str,
+    token: str,
     torch_dtype: any = "auto",
     use_flash_attention2: bool = True,
     lora_config: LoraConfig = None,
@@ -47,7 +52,7 @@ def peft_model(
         torch_dtype=torch_dtype,
         device_map="auto",
         trust_remote_code=True,
-        token=TOKEN,
+        token=token,
     )
 
     model.config.use_cache = False
@@ -63,36 +68,38 @@ def peft_model(
     return {"model": model, "tokenizer": tokenizer, "peft_config": lora_config}
 
 
-def load_model_from_config(model_config: EasyDict):
-    assert model_config.adapter in [
+def load_model_from_config(config: EasyDict):
+    assert config.model.adapter in [
         "none",
         "lora",
         "qlora",
     ], "model adapter not supported. Must be one of the following: qlora, lora or none."
 
     quantization_config = (
-        default_quantization_config() if model_config.adapter == "qlora" else None
+        default_quantization_config() if config.model.adapter == "qlora" else None
     )
 
-    torch_dtype = torch.bfloat16 if model_config.use_bf16 else "auto"
+    torch_dtype = torch.bfloat16 if config.model.use_bf16 else "auto"
 
-    lora_config = None if model_config.adapter == "none" else default_lora_config()
+    lora_config = None if config.model.adapter == "none" else default_lora_config()
 
     return peft_model(
-        model_name=model_config.model_name,
+        model_name=config.model.model_name,
+        token=config.misc.token,
         torch_dtype=torch_dtype,
-        use_flash_attention2=model_config.use_flash_attention2,
+        use_flash_attention2=config.model.use_flash_attention2,
         lora_config=lora_config,
         qconfig=quantization_config,
     )
 
 
-def load_model_from_checkpoint(checkpoint_dir: str, use_bf16: bool=True, device_map: str="auto"):
+def load_model_from_checkpoint(
+    checkpoint_dir: str, use_bf16: bool = True, device_map: str = "auto"
+):
     model = AutoPeftModelForCausalLM.from_pretrained(
-        checkpoint_dir, device_map=device_map, torch_dtype=torch.bfloat16 if use_bf16 else "auto"
+        checkpoint_dir,
+        device_map=device_map,
+        torch_dtype=torch.bfloat16 if use_bf16 else "auto",
     )
     tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
-    return {
-        "model": model,
-        "tokenizer": tokenizer
-    }
+    return {"model": model, "tokenizer": tokenizer}
