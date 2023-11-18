@@ -2,7 +2,8 @@ import argparse
 
 from datasets import load_dataset
 from inference import DecodeCardinalityPipeline
-from utils import MetricLogger, load_config, load_model_from_checkpoint
+from utils import MetricLogger, load_config
+from models import load_model_from_checkpoint
 
 
 def test(config):
