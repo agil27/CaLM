@@ -69,6 +69,10 @@ def populate_default_arguments_for_config(config: edict) -> edict:
         config.training.num_train_epochs = 3
     if "max_steps" not in config.training:
         config.training.max_steps = -1
+    if "test_config_template_path" not in config.io:
+        config.io.test_config_template_path = (
+            "configs/test_configs/test_config_template.yaml"
+        )
 
     # Run related arguments
     config.io.run_name = run_name_from_config(config)
@@ -142,11 +146,8 @@ class MetricLogger:
         self.print_running_stats(self.metrics, self.metric_name)
 
 
-def dump_test_config_from_training_config(
-    config: edict,
-    test_config_template_path: str = "configs/test_configs/test_config_template.yaml",
-) -> dict:
-    test_config = load_config(test_config_template_path)
+def dump_test_config_from_training_config(config: edict) -> dict:
+    test_config = load_config(config.io.test_config_template_path)
     test_config.io.checkpoint_dir = os.path.join(
         config.io.run_output_dir, "final_checkpoint"
     )

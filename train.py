@@ -53,5 +53,5 @@ if __name__ == "__main__":
 
     wandb.init(name=config.io.run_name)
     dump_config(config, os.path.join(config.io.run_output_dir, "config_snapshot.yaml"))
-    dump_test_config_from_training_config(config)
+    dump_test_config_from_training_config(config, config.io.test_config_template)
     train(config)
