@@ -10,8 +10,11 @@ from transformers import TrainingArguments
 
 
 def create_if_not_exists(filename: str):
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
+    dirname = os.path.dirname(filename)
+    if dirname == "":
+        return
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
 
 
 def load_config(config_path: str) -> edict:
