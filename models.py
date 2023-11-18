@@ -1,9 +1,8 @@
 import torch
 from easydict import EasyDict
-from peft import LoraConfig
+from peft import LoraConfig, AutoPeftModelForCausalLM
 from transformers import (
     AutoModelForCausalLM,
-    AutoPeftModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
 )
