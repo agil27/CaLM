@@ -10,17 +10,15 @@ from trl import SFTTrainer
 from utils import (
     load_config,
     load_training_args,
-    dataset_name_from_dataset_type,
     dump_config,
-    populate_default_arguments_for_config
+    populate_default_arguments_for_config,
+    dump_test_config_from_training_config,
 )
 from models import load_model_from_config
 
 
 def train(config: edict):
-    dataset = load_dataset(
-        dataset_name_from_dataset_type(config.io.dataset_type), split="train"
-    )
+    dataset = load_dataset(config.io.dataset_prefix + config.io.mode, split="train")
 
     training_args = load_training_args(config)
 
@@ -52,7 +50,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = load_config(args.config)
     config = populate_default_arguments_for_config(config)
-    
+
     wandb.init(name=config.io.run_name)
-    dump_config(dict(config), os.path.join(config.io.run_output_dir, "config_snapshot.yaml"))
+    dump_config(config, os.path.join(config.io.run_output_dir, "config_snapshot.yaml"))
+    dump_test_config_from_training_config(config)
     train(config)

@@ -23,10 +23,20 @@ def load_config(config_path: str) -> edict:
     return edict(config)
 
 
+def recursively_convert_easydict_to_dict(ed: edict) -> dict:
+    d = {}
+    for key, value in ed.items():
+        if isinstance(value, edict):
+            d[key] = recursively_convert_easydict_to_dict(value)
+        else:
+            d[key] = value
+    return d
+
+
 def dump_config(config: edict, config_path: str) -> edict:
     create_if_not_exists(config_path)
     with open(config_path, "w") as f:
-        yaml.dump(config, f)
+        yaml.dump(recursively_convert_easydict_to_dict(config), f)
 
 
 def run_name_from_config(config: edict) -> str:
@@ -41,16 +51,6 @@ def run_name_from_config(config: edict) -> str:
             f"{formatted_datetime}",
         ]
     )
-
-
-def dataset_name_from_dataset_type(dataset_type: str) -> str:
-    if dataset_type == "science":
-        return "vic0428/imdb-card-pred-science"
-    elif dataset_type == "binary":
-        return "vic0428/imdb-card-pred-binary"
-    elif dataset_type == "decimal":
-        return "vic0428/imdb-card-pred-decimal"
-    raise ValueError(f"Unknown dataset type: {dataset_type}")
 
 
 def load_model_and_tokenizer(checkpoint_dir: str, device: str = "cuda:0") -> tuple:
@@ -139,4 +139,21 @@ class MetricLogger:
         print("95 percentile: ", np.percentile(data, 95))
 
     def print_stats(self):
-        self.print_running_stats(self.metric, self.metric_name)
+        self.print_running_stats(self.metrics, self.metric_name)
+
+
+def dump_test_config_from_training_config(
+    config: edict,
+    test_config_template_path: str = "configs/test_configs/test_config_template.yaml",
+) -> dict:
+    test_config = load_config(test_config_template_path)
+    test_config.io.checkpoint_dir = os.path.join(
+        config.io.run_output_dir, "final_checkpoint"
+    )
+    test_config.io.dataset_prefix = config.io.dataset_prefix
+    test_config.io.mode = config.io.mode
+    test_config.log_file = os.path.join(config.io.run_output_dir, test_config.log_file)
+    test_config.inference.use_bf16 = config.model.use_bf16
+    dump_config(
+        test_config, os.path.join(config.io.run_output_output, "test_config.yaml")
+    )

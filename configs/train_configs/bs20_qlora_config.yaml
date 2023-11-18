@@ -1,5 +1,6 @@
 io:
-  dataset_type: science
+  dataset_prefix: 
+  mode: science
   output_dir: test_bs20_checkpoint
   run_tag: test_bs20_run
 training:

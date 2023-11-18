@@ -1,5 +1,6 @@
 io:
-  dataset_type: science
+  dataset_prefix: vic0428/imdb-card-pred-
+  mode: science
   output_dir: snapshots
   run_tag: yuanbiao-colab-test
 training:
