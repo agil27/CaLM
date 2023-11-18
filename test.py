@@ -33,7 +33,7 @@ def test(config):
             logger.log_and_return_metric(
                 outputs["true_cardinality"],
                 outputs["estimated_cardinality"],
-                outputs[["qerror"]],
+                outputs["qerror"],
             )
         )
         if (i + 1) % config.io.output_step == 0:
