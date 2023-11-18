@@ -158,5 +158,5 @@ def dump_test_config_from_training_config(config: edict) -> dict:
     )
     test_config.inference.use_bf16 = config.model.use_bf16
     dump_config(
-        test_config, os.path.join(config.io.run_output_output, "test_config.yaml")
+        test_config, os.path.join(config.io.run_output_dir, "test_config.yaml")
     )
