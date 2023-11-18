@@ -11,7 +11,7 @@ def test(config):
         config.io.checkpoint_dir,
         device_map=config.inference.device_map,
         use_bf16=config.inference.use_bf16,
-        pad_left=True
+        pad_left=True,
     )
     model = model_dict["model"]
     tokenizer = model_dict["tokenizer"]
@@ -29,15 +29,13 @@ def test(config):
 
     for i, data in enumerate(dataset):
         outputs = pipe(data)
-        print(
-            logger.log_and_return_metric(
-                outputs["true_cardinality"],
-                outputs["estimated_cardinality"],
-                outputs["qerror"],
-            )
+        logger.log_and_return_metric(
+            outputs["true_cardinality"],
+            outputs["estimated_cardinality"],
+            outputs["qerror"],
         )
         if (i + 1) % config.io.output_step == 0:
-            logger.print_running_stats()
+            logger.print_stats()
 
 
 if __name__ == "__main__":
