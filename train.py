@@ -12,7 +12,7 @@ from utils import (
     load_training_args,
     dataset_name_from_dataset_type,
     dump_config,
-    populate_default_arguments_for_configuration
+    populate_default_arguments_for_config
 )
 from models import load_model_from_config
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     config = load_config(args.config)
-    config = populate_default_arguments_for_configuration(config)
+    config = populate_default_arguments_for_config(config)
     
     wandb.init(name=config.io.run_name)
     dump_config(config, os.path.join(config.io.run_output_dir, "config_snapshot.yaml"))
