@@ -45,7 +45,7 @@ def run_name_from_config(config: edict) -> str:
         [
             f"{config.io.run_tag}",
             f"{config.model.adapter}",
-            f"dataset-{config.io.dataset_type}",
+            f"mode-{config.io.mode}",
             f"batch-size-{config.training.batch_size}",
             f"epochs-{config.training.num_train_epochs}",
             f"{formatted_datetime}",
