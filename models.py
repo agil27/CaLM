@@ -57,8 +57,8 @@ def peft_model(
     model.config.pretraining_tp = 1
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.padding_side = "right"
+    tokenizer.pad_token = " "
+    tokenizer.padding_side = "left"
 
     return {"model": model, "tokenizer": tokenizer, "peft_config": lora_config}
 

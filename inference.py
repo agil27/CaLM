@@ -43,7 +43,7 @@ class DecodeCardinalityPipeline(Pipeline):
 
     def preprocess(self, raw_inputs, second_text=None):
         model_inputs = self.tokenizer(
-            raw_inputs["prompt"], return_tensors=self.framework
+            raw_inputs["prompt"], return_tensors=self.framework, padding="longest"
         )
         model_inputs["true_cardinality"] = raw_inputs["true_cardinality"]
         model_inputs["prompt"] = raw_inputs["prompt"]
