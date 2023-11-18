@@ -6,6 +6,7 @@ import torch
 from transformers import AutoTokenizer
 from peft import AutoPeftModelForCausalLM
 import numpy as np
+from transformers import TrainingArguments
 
 
 def create_if_not_exists(filename: str):
@@ -57,12 +58,55 @@ def load_model_and_tokenizer(checkpoint_dir: str, device: str = "cuda:0") -> tup
     return model, tokenizer
 
 
+def populate_default_arguments_for_config(config: edict) -> edict:
+    # Default arguments
+    if "max_seq_length" not in config.io:
+        config.io.max_seq_length = 512
+    if "num_train_epochs" not in config.training:
+        config.training.num_train_epochs = 3
+    if "max_steps" not in config.training:
+        config.training.max_steps = -1
+
+    # Run related arguments
+    config.io.run_name = run_name_from_config(config)
+    config.io.run_output_dir = os.path.join(config.io.output_dir, config.io.run_name)
+    if not os.path.exists(config.io.run_output_dir):
+        os.makedirs(config.io.run_output_dir)
+
+    return config
+
+
+def load_training_args(config: edict) -> TrainingArguments:
+    training_args = TrainingArguments(
+        output_dir=config.io.run_output_dir,
+        do_train=True,
+        num_train_epochs=config.training.num_train_epochs,
+        max_steps=config.training.max_steps,
+        gradient_accumulation_steps=config.training.gradient_accumulation_steps,
+        gradient_checkpointing=True,
+        optim=config.training.optimizer,
+        logging_steps=10,
+        learning_rate=config.training.learning_rate,
+        bf16=config.model.use_bf16,
+        max_grad_norm=0.3,
+        warmup_ratio=0.03,
+        save_total_limit=5,
+    )
+
+    training_args = training_args.set_dataloader(
+        train_batch_size=config.training.batch_size
+    )
+
+    return training_args
+
+
 class MetricLogger:
     """
     A logger that logs metrics and losses, as well as the ground truths and predictions in a CSV format.
     It can print out the metrics and running stats.
     """
-    def __init__(self, log_file: str, metric_name: str="metric"):
+
+    def __init__(self, log_file: str, metric_name: str = "metric"):
         self.log_file = log_file
         create_if_not_exists(self.log_file)
 
