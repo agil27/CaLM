@@ -8,6 +8,9 @@ from trl import (
 from easydict import EasyDict as edict
 from models import load_model_from_checkpoint
 from inference import batch_decode_cardinality_and_calc_qerror
+import argparse
+from utils import load_config
+
 
 
 def train_ppo(config: edict):
@@ -104,3 +107,11 @@ def train_ppo(config: edict):
             batch["rewards"],
             columns_to_log=["query", "response", "rewards"],
         )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config", help="training config YAML file path", required=True)
+    args = parser.parse_args()
+    config = load_config(args.config)
+    train_ppo(config)
