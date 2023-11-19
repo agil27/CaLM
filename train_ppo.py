@@ -12,7 +12,6 @@ import argparse
 from utils import load_config
 
 
-
 def train_ppo(config: edict):
     model_and_tokenizer = load_model_from_checkpoint(
         checkpoint_dir=config.io.sft_checkpoint,
@@ -25,9 +24,7 @@ def train_ppo(config: edict):
 
     # Prepare the dataset.
     def tokenize(sample):
-        encoded_sample = tokenizer.encode(sample["prompt"])
-        sample["input_id"] = encoded_sample["input_id"]
-        sample["attention_mask"] = encoded_sample["attention_mask"]
+        sample["input_id"] = tokenizer.encode(sample["prompt"])
         return sample
 
     dataset = load_dataset(config.io.dataset_prefix + config.io.mode, split="train")
@@ -111,7 +108,9 @@ def train_ppo(config: edict):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help="training config YAML file path", required=True)
+    parser.add_argument(
+        "-c", "--config", help="training config YAML file path", required=True
+    )
     args = parser.parse_args()
     config = load_config(args.config)
     train_ppo(config)
