@@ -1,5 +1,7 @@
 import re
+from typing import List
 from transformers import Pipeline
+import numpy as np
 
 
 def calc_qerror(estimated_cardinality, actual_cardinality):
@@ -28,6 +30,55 @@ def science_decode(output_text):
     science_pattern = re.compile(r"(\d\.\d+e\d+)")
     science_str = re.findall(science_pattern, output_text)[0]
     return int(float(science_str))
+
+
+def decode_cardinality_and_calc_qerror(
+    output_text: str, true_cardinality: int, decode_mode: str = "decimal"
+) -> dict:
+    estimated_cardinality = None
+    if decode_mode == "binary":
+        estimated_cardinality = binary_decode(output_text)
+    elif decode_mode == "decimal":
+        estimated_cardinality = decimal_decode(output_text)
+    elif decode_mode == "science":
+        estimated_cardinality = science_decode(output_text)
+    else:
+        raise ValueError(
+            "Invalid decode mode. Should be one of decimal, binary or scientific."
+        )
+    qerror = calc_qerror(estimated_cardinality, true_cardinality)
+    return {
+        "estimated_cardinality": estimated_cardinality,
+        "true_cardinality": true_cardinality,
+        "qerror": qerror,
+    }
+
+
+def batch_decode_cardinality_and_calc_qerror(
+    output_texts: List[str], true_cardinalities: List[int], decode_mode: str = "decimal"
+) -> dict:
+    estimated_cardinalities = []
+    true_cardinalities = []
+    qerrors = []
+
+    for i in range(len(output_texts)):
+        if decode_mode == "binary":
+            estimated_cardinalities.append(binary_decode(output_texts[i]))
+        elif decode_mode == "decimal":
+            estimated_cardinalities.append(decimal_decode(output_texts[i]))
+        elif decode_mode == "science":
+            estimated_cardinalities.append(science_decode(output_texts[i]))
+        else:
+            raise ValueError(
+                "Invalid decode mode. Should be one of decimal, binary or scientific."
+            )
+        qerrors.append(calc_qerror(estimated_cardinalities[i], true_cardinalities[i]))
+
+    return {
+        "estimated_cardinality": np.array(estimated_cardinalities),
+        "true_cardinality": np.array(true_cardinalities),
+        "qerror": np.array(qerrors),
+    }
 
 
 class DecodeCardinalityPipeline(Pipeline):
@@ -66,23 +117,6 @@ class DecodeCardinalityPipeline(Pipeline):
 
     def postprocess(self, model_outputs, **generate_kwargs):
         decode_mode = generate_kwargs.pop("decode_mode", "decimal")
-        estimated_cardinality = None
-        output_text = model_outputs["output_text"]
-        if decode_mode == "binary":
-            estimated_cardinality = binary_decode(output_text)
-        elif decode_mode == "decimal":
-            estimated_cardinality = decimal_decode(output_text)
-        elif decode_mode == "science":
-            estimated_cardinality = science_decode(output_text)
-        else:
-            raise ValueError(
-                "Invalid decode mode. Should be one of decimal, binary or scientific."
-            )
-
-        true_cardinality = model_outputs["true_cardinality"]
-        qerror = calc_qerror(estimated_cardinality, true_cardinality)
-        return {
-            "estimated_cardinality": estimated_cardinality,
-            "true_cardinality": true_cardinality,
-            "qerror": qerror,
-        }
+        return decode_cardinality_and_calc_qerror(
+            model_outputs["output_text"], model_outputs["true_cardinality"], decode_mode
+        )

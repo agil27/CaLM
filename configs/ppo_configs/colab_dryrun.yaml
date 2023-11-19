@@ -1,0 +1,21 @@
+io:
+  dataset_prefix: vic0428/imdb-card-pred-
+  mode: decimal
+  output_dir: ppo_snapshots
+  run_tag: yuanbiao-colab-ppo-test
+training:
+  max_steps: 120
+  gradient_accumulation_steps: 2
+  learning_rate: 0.0002
+  batch_size: 4
+  optimizer: "adamw_torch"
+model:
+  use_bf16: false
+  use_flash_attention2: false
+  model_name: NousResearch/Llama-2-7b-hf
+  adapter: lora
+misc:
+  seed: 42
+  token: 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
+inference:
+  max_length: 16
