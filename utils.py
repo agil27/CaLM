@@ -4,9 +4,10 @@ from datetime import datetime
 import os
 import torch
 from transformers import AutoTokenizer
-from peft import AutoPeftModelForCausalLM
+import peft
 import numpy as np
 from transformers import TrainingArguments
+import trl
 
 
 def create_if_not_exists(filename: str):
@@ -51,14 +52,6 @@ def run_name_from_config(config: edict) -> str:
             f"{formatted_datetime}",
         ]
     )
-
-
-def load_model_and_tokenizer(checkpoint_dir: str, device: str = "cuda:0") -> tuple:
-    model = AutoPeftModelForCausalLM.from_pretrained(
-        checkpoint_dir, device_map=device, torch_dtype=torch.bfloat16
-    )
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
-    return model, tokenizer
 
 
 def populate_default_arguments_for_config(config: edict) -> edict:
@@ -157,6 +150,4 @@ def dump_test_config_from_training_config(config: edict) -> dict:
         config.io.run_output_dir, test_config.io.log_file
     )
     test_config.inference.use_bf16 = config.model.use_bf16
-    dump_config(
-        test_config, os.path.join(config.io.run_output_dir, "test_config.yaml")
-    )
+    dump_config(test_config, os.path.join(config.io.run_output_dir, "test_config.yaml"))
