@@ -6,17 +6,17 @@ from trl import (
     set_seed,
 )
 from easydict import EasyDict as edict
-from models import load_model_from_checkpoint
+from models import load_trl_model_from_checkpoint
 from inference import batch_decode_cardinality_and_calc_qerror
 import argparse
 from utils import load_config
 
 
 def train_ppo(config: edict):
-    model_and_tokenizer = load_model_from_checkpoint(
+    model_and_tokenizer = load_trl_model_from_checkpoint(
         checkpoint_dir=config.io.sft_checkpoint,
         use_bf16=config.io.use_bf16,
-        device_map="auto",
+        device_map=config.io.device_map,
         pad_left=True,
     )
     model = model_and_tokenizer["model"]
@@ -37,10 +37,10 @@ def train_ppo(config: edict):
     set_seed(config.misc.seed)
 
     # The reference model is just a deep copy of the SFT model.
-    ref_model = load_model_from_checkpoint(
+    ref_model = load_trl_model_from_checkpoint(
         checkpoint_dir=config.io.sft_checkpoint,
         use_bf16=config.io.use_bf16,
-        device_map="auto",
+        device_map=config.io.device_map,
         pad_left=True,
     )["model"]
 

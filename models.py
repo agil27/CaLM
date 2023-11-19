@@ -6,6 +6,7 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
+import trl
 
 
 def default_lora_config() -> LoraConfig:
@@ -97,6 +98,24 @@ def load_model_from_checkpoint(
     pad_left: bool = True
 ):
     model = AutoPeftModelForCausalLM.from_pretrained(
+        checkpoint_dir,
+        device_map=device_map,
+        torch_dtype=torch.bfloat16 if use_bf16 else "auto",
+    )
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
+
+    if pad_left:
+        tokenizer.pad_token = tokenizer.bos_token
+        tokenizer.padding_side = "left"
+
+    return {"model": model, "tokenizer": tokenizer}
+
+
+def load_trl_model_from_checkpoint(
+    checkpoint_dir: str, use_bf16: bool = True, device_map: str = "auto",
+    pad_left: bool = True
+):
+    model = trl.AutoModelForCausalLMWithValueHead.from_pretrained(
         checkpoint_dir,
         device_map=device_map,
         torch_dtype=torch.bfloat16 if use_bf16 else "auto",
