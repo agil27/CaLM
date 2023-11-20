@@ -1,14 +1,31 @@
 import re
-from typing import List
 from transformers import Pipeline
 import numpy as np
+import torch
+
+
+MAX_QERROR = 1e7
 
 
 def calc_qerror(estimated_cardinality, actual_cardinality):
+    if estimated_cardinality == 0 or actual_cardinality == 0:
+        return MAX_QERROR
     return max(
         estimated_cardinality / actual_cardinality,
         actual_cardinality / estimated_cardinality,
     )
+
+
+def batch_calc_qerror(estimated_cardinalities, actual_cardinalities):
+    e_array = np.array(estimated_cardinalities)
+    a_array = np.array(actual_cardinalities)
+    e_over_a = np.divide(
+        e_array, a_array, where=(a_array != 0), out=np.ones_like(e_array) * MAX_QERROR
+    )
+    a_over_e = np.divide(
+        a_array, e_array, where=(e_array != 0), out=np.ones_like(e_array) * MAX_QERROR
+    )
+    return np.maximum(e_over_a, a_over_e)
 
 
 def binary_decode(output_text):
@@ -16,20 +33,26 @@ def binary_decode(output_text):
     binary_pattern = re.compile(r"([0-1]+)")
 
     # Find the matching characters
-    binary_str = re.findall(binary_pattern, output_text)[0]
-    return int(binary_str, 2)
+    binary_strs = re.findall(binary_pattern, output_text)
+    if len(binary_strs) == 0:
+        return 0
+    return int(binary_strs[0], 2)
 
 
 def decimal_decode(output_text):
     decimal_pattern = re.compile(r"(\d+)")
-    decimal_str = re.findall(decimal_pattern, output_text)[0]
-    return int(decimal_str)
+    decimal_strs = re.findall(decimal_pattern, output_text)
+    if len(decimal_strs) == 0:
+        return 0
+    return int(decimal_strs[0])
 
 
 def science_decode(output_text):
     science_pattern = re.compile(r"(\d\.\d+e\d+)")
-    science_str = re.findall(science_pattern, output_text)[0]
-    return int(float(science_str))
+    science_strs = re.findall(science_pattern, output_text)
+    if len(science_strs) == 0:
+        return 0
+    return int(float(science_strs[0]))
 
 
 def decode_cardinality_and_calc_qerror(
@@ -55,12 +78,10 @@ def decode_cardinality_and_calc_qerror(
 
 
 def batch_decode_cardinality_and_calc_qerror(
-    output_texts: List[str], true_cardinalities: List[int], decode_mode: str = "decimal"
+    output_texts, true_cardinalities, decode_mode: str = "decimal"
 ) -> dict:
     estimated_cardinalities = []
-    true_cardinalities = []
-    qerrors = []
-
+    true_cardinalities = torch.Tensor(true_cardinalities).cpu().numpy()
     for i in range(len(output_texts)):
         if decode_mode == "binary":
             estimated_cardinalities.append(binary_decode(output_texts[i]))
@@ -72,8 +93,8 @@ def batch_decode_cardinality_and_calc_qerror(
             raise ValueError(
                 "Invalid decode mode. Should be one of decimal, binary or scientific."
             )
-        qerrors.append(calc_qerror(estimated_cardinalities[i], true_cardinalities[i]))
-
+    print(type(estimated_cardinalities), type(true_cardinalities))
+    qerrors = batch_calc_qerror(estimated_cardinalities, true_cardinalities)
     return {
         "estimated_cardinality": np.array(estimated_cardinalities),
         "true_cardinality": np.array(true_cardinalities),

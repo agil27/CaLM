@@ -1,14 +1,12 @@
-from tqdm import tqdm
-from datasets import load_dataset
-from trl import (
-    PPOConfig,
-    PPOTrainer,
-    set_seed,
-)
-from easydict import EasyDict as edict
-from models import load_trl_model_from_checkpoint
-from inference import batch_decode_cardinality_and_calc_qerror
 import argparse
+
+import torch
+from datasets import load_dataset
+from easydict import EasyDict as edict
+from inference import batch_decode_cardinality_and_calc_qerror
+from models import load_trl_model_from_checkpoint
+from tqdm import tqdm
+from trl import PPOConfig, PPOTrainer, set_seed
 from utils import load_config
 
 
@@ -25,10 +23,12 @@ def train_ppo(config: edict):
     # Prepare the dataset.
     def tokenize(sample):
         sample["input_id"] = tokenizer.encode(sample["prompt"])
+        sample["query"] = sample["prompt"]
         return sample
 
     dataset = load_dataset(config.io.dataset_prefix + config.io.mode, split="train")
-    dataset = dataset.map(tokenize).set_format(type="torch")
+    dataset = dataset.map(tokenize)
+    dataset.set_format(type="torch")
 
     def collator(data):
         return dict((key, [d[key] for d in data]) for key in data[0])
@@ -58,6 +58,7 @@ def train_ppo(config: edict):
         tokenizer,
         dataset=dataset,
         data_collator=collator,
+        remove_unsused_columns=False,
     )
 
     # The arguments passed to the PPO generate function to generate the model
@@ -71,7 +72,7 @@ def train_ppo(config: edict):
     }
 
     for _, batch in tqdm(enumerate(ppo_trainer.dataloader)):
-        query_tensors = batch["input_ids"]
+        query_tensors = batch["input_id"]
 
         # Get response from the active and the reference model
         response_tensors, ref_response_tensors = ppo_trainer.generate(
@@ -85,16 +86,19 @@ def train_ppo(config: edict):
 
         # Compute sentiment score
         decoded_active_model_outputs = batch_decode_cardinality_and_calc_qerror(
-            batch["repsonse"], batch["true_cardinality"], config.io.mode
+            batch["response"], batch["true_cardinality"], config.io.mode
         )
         decoded_ref_model_outputs = batch_decode_cardinality_and_calc_qerror(
             batch["ref_response"], batch["true_cardinality"], config.io.mode
         )
 
         # The reward is defined as the proportion of reduced / increased qerror.
-        batch["rewards"] = (
+        rewards = (
             decoded_ref_model_outputs["qerror"] - decoded_active_model_outputs["qerror"]
         ) / decoded_ref_model_outputs["qerror"]
+
+        rewards = [torch.FloatTensor([r]) for r in rewards]
+        batch["rewards"] = rewards
 
         # Run PPO step
         stats = ppo_trainer.step(query_tensors, response_tensors, batch["rewards"])
