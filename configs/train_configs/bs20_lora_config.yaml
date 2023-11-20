@@ -1,19 +1,19 @@
 io:
-  dataset_prefix: 
-  mode: science
+  dataset_prefix: vic0428/imdb-card-pred-
+  mode: decimal
   output_dir: test_bs20_checkpoint
-  run_tag: test_bs20_run
+  run_tag: vic-lambda3-test
 training:
   num_train_epochs: 3
   gradient_accumulation_steps: 1
   learning_rate: 0.0002
   batch_size: 20
-  optimizer: "paged_adamw_32bit"
+  optimizer: "adamw_torch"
 model:
   use_bf16: true
   use_flash_attention2: true
   model_name: NousResearch/Llama-2-7b-hf
-  adapter: qlora
+  adapter: lora
 misc:
   seed: 42
   token: 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
