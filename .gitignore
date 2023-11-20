@@ -6,4 +6,4 @@ results*/**
 *.pyc
 *.pyo
 __pycache__/
-*checkpoint/**
+*checkpoint*/**
