@@ -1,0 +1,19 @@
+io:
+  dataset_prefix: CardinalityLM/imdb-card-pred-
+  mode: decimal
+  output_dir: /content/snapshots-gpt
+  run_tag: yuanbiao-colab-gpt2
+training:
+  max_steps: 2000
+  gradient_accumulation_steps: 2
+  learning_rate: 0.0002
+  batch_size: 16
+  optimizer: "adamw_torch"
+model:
+  use_bf16: false
+  use_flash_attention2: false
+  model_name: gpt2
+  adapter: lora
+misc:
+  seed: 42
+  token: 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

@@ -1,8 +1,8 @@
 io:
   dataset_prefix: CardinalityLM/imdb-card-pred-
   mode: decimal
-  output_dir: /content/ppo_snapshots
-  run_tag: yuanbiao-colab-ppo-test
+  output_dir: /content/ppo_snapshots-gpt2
+  run_tag: yuanbiao-colab-ppo-gpt2
   sft_checkpoint: /content/final_checkpoint/
   use_bf16: true
   device_map: "cuda:0"
@@ -15,7 +15,7 @@ training:
 model:
   use_bf16: false
   use_flash_attention2: false
-  model_name: NousResearch/Llama-2-7b-hf
+  model_name: gpt2
   adapter: lora
 misc:
   seed: 42
