@@ -1,0 +1,24 @@
+io:
+  dataset_prefix: vic0428/imdb-card-pred-
+  mode: decimal
+  output_dir: ppo_snapshots
+  run_tag: vic-lambda3-ppo-test
+  sft_checkpoint: ppo_checkpoint
+  use_bf16: true
+  device_map: "cuda:0"
+training:
+  num_train_epochs: 3
+  gradient_accumulation_steps: 1
+  learning_rate: 0.0002
+  batch_size: 20
+  optimizer: "adamw_torch"
+model:
+  use_bf16: true
+  use_flash_attention2: true
+  model_name: NousResearch/Llama-2-7b-hf
+  adapter: lora
+misc:
+  seed: 42
+  token: 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
+inference:
+  max_length: 16
