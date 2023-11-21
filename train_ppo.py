@@ -49,7 +49,7 @@ def train_ppo(config: edict):
         model_name=config.model.model_name,
         learning_rate=config.training.learning_rate,
         log_with="wandb",
-        remove_unsused_columns=False
+        remove_unused_columns=False
     )
 
     ppo_trainer = PPOTrainer(
