@@ -2,12 +2,8 @@ from easydict import EasyDict as edict
 import yaml
 from datetime import datetime
 import os
-import torch
-from transformers import AutoTokenizer
-import peft
 import numpy as np
 from transformers import TrainingArguments
-import trl
 
 
 def create_if_not_exists(filename: str):

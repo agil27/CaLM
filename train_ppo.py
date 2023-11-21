@@ -49,6 +49,7 @@ def train_ppo(config: edict):
         model_name=config.model.model_name,
         learning_rate=config.training.learning_rate,
         log_with="wandb",
+        remove_unsused_columns=False
     )
 
     ppo_trainer = PPOTrainer(
@@ -57,8 +58,7 @@ def train_ppo(config: edict):
         ref_model,
         tokenizer,
         dataset=dataset,
-        data_collator=collator,
-        remove_unsused_columns=False,
+        data_collator=collator
     )
 
     # The arguments passed to the PPO generate function to generate the model
