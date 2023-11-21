@@ -3,11 +3,11 @@ io:
   mode: decimal
   output_dir: checkpoints/ppo_results_nov20_decimal
   run_tag: isabella-lambda-ppo-llama
-  sft_checkpoint: checkpoints/results_nov20_decimal-bs20/isabella-lambda3-ppo-llama-lora-mode-decimal-batch-size-20-epochs-3-2023-11-20-17-14-19/final_checkpoint
+  sft_checkpoint: checkpoints/warm_1500_step/isabella-lambda3-warm-1500-steps-lora-mode-decimal-batch-size-20-epochs-3-2023-11-20-21-17-32/final_checkpoint
   device_map: "cuda:0"
   use_bf16: true
 training:
-  max_steps: 120
+  num_train_epochs: 3
   gradient_accumulation_steps: 1
   learning_rate: 0.0002
   batch_size: 20
