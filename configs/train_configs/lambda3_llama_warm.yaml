@@ -1,0 +1,22 @@
+###
+# Train 1500 steps to pre-warm before the ppo training
+###
+io:
+  dataset_prefix: CardinalityLM/imdb-card-pred-
+  mode: decimal
+  output_dir: checkpoints/warm_1500_step
+  run_tag: isabella-lambda3-warm-1500-steps
+training:
+  max_steps: 1500
+  gradient_accumulation_steps: 1
+  learning_rate: 0.0002
+  batch_size: 20
+  optimizer: "adamw_torch"
+model:
+  use_bf16: true
+  use_flash_attention2: true
+  model_name: NousResearch/Llama-2-7b-hf
+  adapter: lora
+misc:
+  seed: 42
+  token: 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
