@@ -93,7 +93,7 @@ def batch_decode_cardinality_and_calc_qerror(
             raise ValueError(
                 "Invalid decode mode. Should be one of decimal, binary or scientific."
             )
-    print(type(estimated_cardinalities), type(true_cardinalities))
+    # print(type(estimated_cardinalities), type(true_cardinalities))
     qerrors = batch_calc_qerror(estimated_cardinalities, true_cardinalities)
     return {
         "estimated_cardinality": np.array(estimated_cardinalities),

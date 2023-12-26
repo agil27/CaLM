@@ -1,14 +1,16 @@
 import argparse
-
 import torch
+import wandb
+
 from datasets import load_dataset
 from easydict import EasyDict as edict
 from inference import batch_decode_cardinality_and_calc_qerror
 from models import load_trl_model_from_checkpoint
 from tqdm import tqdm
 from trl import PPOConfig, PPOTrainer, set_seed
-from utils import load_config
-
+from utils import load_config, populate_default_arguments_for_config
+from models import load_reward_model_from_checkpoint
+from transformers import pipeline
 
 def train_ppo(config: edict):
     model_and_tokenizer = load_trl_model_from_checkpoint(
@@ -71,43 +73,58 @@ def train_ppo(config: edict):
         "max_new_tokens": config.inference.max_length,
     }
 
-    for _, batch in tqdm(enumerate(ppo_trainer.dataloader)):
-        query_tensors = batch["input_id"]
+    reward_model, reward_tokenizer = load_reward_model_from_checkpoint("checkpoints/reward-/reward_checkpoint")
+    reward_pipeline = pipeline("reward_model", model = reward_model, tokenizer=reward_tokenizer)
 
-        # Get response from the active and the reference model
-        response_tensors, ref_response_tensors = ppo_trainer.generate(
-            query_tensors,
-            return_prompt=False,
-            generate_ref_response=True,
-            **generation_kwargs
-        )
-        batch["response"] = tokenizer.batch_decode(response_tensors)
-        batch["ref_response"] = tokenizer.batch_decode(ref_response_tensors)
+    for _ in range(config.training.num_train_epochs):
+        # TODO: see the epochs
+        for batch in tqdm(ppo_trainer.dataloader):
+            query_tensors = batch["input_id"]
 
-        # Compute sentiment score
-        decoded_active_model_outputs = batch_decode_cardinality_and_calc_qerror(
-            batch["response"], batch["true_cardinality"], config.io.mode
-        )
-        decoded_ref_model_outputs = batch_decode_cardinality_and_calc_qerror(
-            batch["ref_response"], batch["true_cardinality"], config.io.mode
-        )
+            # Get response from the active and the reference model
+            response_tensors, ref_response_tensors = ppo_trainer.generate(
+                query_tensors,
+                return_prompt=False,
+                generate_ref_response=True,
+                **generation_kwargs
+            )
+            batch["response"] = tokenizer.batch_decode(response_tensors)
+            batch["ref_response"] = tokenizer.batch_decode(ref_response_tensors)
 
-        # The reward is defined as the proportion of reduced / increased qerror.
-        rewards = (
-            decoded_ref_model_outputs["qerror"] - decoded_active_model_outputs["qerror"]
-        ) / decoded_ref_model_outputs["qerror"]
+            # Compute sentiment score
+            decoded_active_model_outputs = batch_decode_cardinality_and_calc_qerror(
+                batch["response"], batch["true_cardinality"], config.io.mode
+            )
+            decoded_ref_model_outputs = batch_decode_cardinality_and_calc_qerror(
+                batch["ref_response"], batch["true_cardinality"], config.io.mode
+            )
 
-        rewards = [torch.FloatTensor([r]) for r in rewards]
-        batch["rewards"] = rewards
+            # The reward is defined as the proportion of reduced / increased qerror.
+            # TODO 1: normalize the rewards (use training set to find the cardinality of upper bound)
+            # TODO 2: replace decoded_ref_model_outputs with classical method / baseline methods (orcal model methods)
+            # TODO 3: tune the weights between rl loss and KL divergence loss
+            # rewards = (
+                # decoded_ref_model_outputs["qerror"] - decoded_active_model_outputs["qerror"]
+            # ) / decoded_ref_model_outputs["qerror"]
+            # UPPER_BOUND = 460456072
+            # rewards = (
+            #     decoded_ref_model_outputs["qerror"] - decoded_active_model_outputs["qerror"]
+            # ) / UPPER_BOUND
 
-        # Run PPO step
-        stats = ppo_trainer.step(query_tensors, response_tensors, batch["rewards"])
-        ppo_trainer.log_stats(
-            stats,
-            batch,
-            batch["rewards"],
-            columns_to_log=["query", "response", "rewards"],
-        )
+            texts = [q + r for q, r in zip(batch["query"], batch["response"])]
+            pipe_outputs = reward_model(texts)
+            rewards = [torch.tensor(output[1]["score"]) for output in pipe_outputs]
+            # rewards = [torch.FloatTensor([r]) for r in rewards]
+            batch["rewards"] = rewards
+
+            # Run PPO step
+            stats = ppo_trainer.step(query_tensors, response_tensors, batch["rewards"])
+            ppo_trainer.log_stats(
+                stats,
+                batch,
+                batch["rewards"],
+                columns_to_log=["query", "response", "rewards"],
+            )
 
 
 if __name__ == "__main__":
@@ -117,4 +134,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     config = load_config(args.config)
+    config = populate_default_arguments_for_config(config)
+    wandb.init(name=config.io.run_name)
     train_ppo(config)

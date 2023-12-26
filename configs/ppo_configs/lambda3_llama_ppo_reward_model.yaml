@@ -1,0 +1,24 @@
+io:
+  dataset_prefix: CardinalityLM/imdb-card-pred-
+  mode: decimal
+  output_dir: checkpoints/ppo_results_nov20_decimal_reward
+  run_tag: isabella-lambda-ppo-llama-reward
+  sft_checkpoint: checkpoints/warm_1500_step/isabella-lambda3-warm-1500-steps-lora-mode-decimal-batch-size-20-epochs-3-2023-11-20-21-17-32/final_checkpoint
+  device_map: "cuda:0"
+  use_bf16: true
+training:
+  num_train_epochs: 3
+  gradient_accumulation_steps: 1
+  learning_rate: 0.0002
+  batch_size: 20
+  optimizer: "adamw_torch"
+model:
+  use_bf16: true
+  use_flash_attention2: true
+  model_name: NousResearch/Llama-2-7b-hf
+  adapter: lora
+misc:
+  seed: 42
+  token: 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
+inference:
+  max_length: 16
