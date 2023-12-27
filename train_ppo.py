@@ -51,7 +51,8 @@ def train_ppo(config: edict):
         model_name=config.model.model_name,
         learning_rate=config.training.learning_rate,
         log_with="wandb",
-        remove_unused_columns=False
+        remove_unused_columns=False,
+        batch_size=config.training.batch_size
     )
 
     ppo_trainer = PPOTrainer(
@@ -73,8 +74,8 @@ def train_ppo(config: edict):
         "max_new_tokens": config.inference.max_length,
     }
 
-    reward_model, reward_tokenizer = load_reward_model_from_checkpoint("checkpoints/reward-/reward_checkpoint")
-    reward_pipeline = pipeline("reward_model", model = reward_model, tokenizer=reward_tokenizer)
+    # reward_model, reward_tokenizer = load_reward_model_from_checkpoint("checkpoints/reward-/reward_checkpoint")
+    # reward_pipeline = pipeline("reward_model", model = reward_model, tokenizer=reward_tokenizer)
 
     for _ in range(config.training.num_train_epochs):
         # TODO: see the epochs
@@ -106,16 +107,15 @@ def train_ppo(config: edict):
             # rewards = (
                 # decoded_ref_model_outputs["qerror"] - decoded_active_model_outputs["qerror"]
             # ) / decoded_ref_model_outputs["qerror"]
-            # UPPER_BOUND = 460456072
-            # rewards = (
-            #     decoded_ref_model_outputs["qerror"] - decoded_active_model_outputs["qerror"]
-            # ) / UPPER_BOUND
+            UPPER_BOUND = 460456072
+            rewards = (
+                decoded_ref_model_outputs["qerror"] - decoded_active_model_outputs["qerror"]
+            ) / UPPER_BOUND
 
-            texts = [q + r for q, r in zip(batch["query"], batch["response"])]
-            pipe_outputs = reward_model(texts)
-            rewards = [torch.tensor(output[1]["score"]) for output in pipe_outputs]
-            # rewards = [torch.FloatTensor([r]) for r in rewards]
+            rewards = [torch.FloatTensor([r]) for r in rewards]
             batch["rewards"] = rewards
+            batch["qerror"] = decoded_active_model_outputs["qerror"]
+            batch["ref_qerror"] = decoded_ref_model_outputs["qerror"]
 
             # Run PPO step
             stats = ppo_trainer.step(query_tensors, response_tensors, batch["rewards"])
@@ -123,7 +123,7 @@ def train_ppo(config: edict):
                 stats,
                 batch,
                 batch["rewards"],
-                columns_to_log=["query", "response", "rewards"],
+                columns_to_log=["query", "response", "true_cardinality", "rewards", "qerror", "ref_qerror"],
             )
 
 

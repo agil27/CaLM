@@ -116,7 +116,7 @@ def load_trl_model_from_checkpoint(
     checkpoint_dir: str, use_bf16: bool = True, device_map: str = "auto",
     pad_left: bool = True
 ):
-    model = AutoModelForSequenceClassification.from_pretrained(
+    model = trl.AutoModelForCausalLMWithValueHead.from_pretrained(
         checkpoint_dir,
         device_map=device_map,
         torch_dtype=torch.bfloat16 if use_bf16 else "auto",
