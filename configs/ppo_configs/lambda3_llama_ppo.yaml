@@ -12,6 +12,7 @@ training:
   learning_rate: 0.0002
   batch_size: 20
   optimizer: "adamw_torch"
+  reward_type: log
 model:
   use_bf16: true
   use_flash_attention2: true

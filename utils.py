@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import numpy as np
 from transformers import TrainingArguments
+import torch
 
 
 def create_if_not_exists(filename: str):
@@ -147,3 +148,33 @@ def dump_test_config_from_training_config(config: edict) -> dict:
     )
     test_config.inference.use_bf16 = config.model.use_bf16
     dump_config(test_config, os.path.join(config.io.run_output_dir, "test_config.yaml"))
+
+
+def log_reward(ref_qerror, active_qerror):
+    if isinstance(ref_qerror, float):
+        assert isinstance(active_qerror, float)
+        return np.log(ref_qerror) - np.log(active_qerror)
+    if isinstance(ref_qerror, np.ndarray):
+        assert isinstance(active_qerror, np.ndarray)
+        return np.log(ref_qerror) - np.log(active_qerror)
+    if isinstance(ref_qerror, torch.Tensor):
+        assert isinstance(active_qerror, torch.Tensor)
+        return torch.log(ref_qerror) - torch.log(active_qerror)
+
+    # Otherwise, returns an exception
+    raise NotImplementedError(
+        "Function log_reward is not implemented for data type: %s and %s"
+        % (type(ref_qerror), type(active_qerror))
+    )
+
+
+def proportion_reward(ref_qerror, active_qerror):
+    return (ref_qerror - active_qerror) / ref_qerror
+
+
+def reward(ref_qerror, active_qerror, reward_type):
+    assert reward_type in ["log", "prop"], "Reward type should be either `log` or `prop"
+    if reward_type == "log":
+        return log_reward(ref_qerror, active_qerror)
+    else:  # reward_type == 'prop'
+        return proportion_reward(ref_qerror, active_qerror)

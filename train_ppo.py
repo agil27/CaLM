@@ -7,7 +7,7 @@ from inference import batch_decode_cardinality_and_calc_qerror
 from models import load_trl_model_from_checkpoint
 from tqdm import tqdm
 from trl import PPOConfig, PPOTrainer, set_seed
-from utils import load_config
+from utils import load_config, reward
 
 
 def train_ppo(config: edict):
@@ -49,16 +49,11 @@ def train_ppo(config: edict):
         model_name=config.model.model_name,
         learning_rate=config.training.learning_rate,
         log_with="wandb",
-        remove_unused_columns=False
+        remove_unused_columns=False,
     )
 
     ppo_trainer = PPOTrainer(
-        ppo_config,
-        model,
-        ref_model,
-        tokenizer,
-        dataset=dataset,
-        data_collator=collator
+        ppo_config, model, ref_model, tokenizer, dataset=dataset, data_collator=collator
     )
 
     # The arguments passed to the PPO generate function to generate the model
@@ -93,9 +88,11 @@ def train_ppo(config: edict):
         )
 
         # The reward is defined as the proportion of reduced / increased qerror.
-        rewards = (
-            decoded_ref_model_outputs["qerror"] - decoded_active_model_outputs["qerror"]
-        ) / decoded_ref_model_outputs["qerror"]
+        rewards = reward(
+            decoded_ref_model_outputs["qerror"],
+            decoded_active_model_outputs["qerror"],
+            config.training.reward_type,
+        )
 
         rewards = [torch.FloatTensor([r]) for r in rewards]
         batch["rewards"] = rewards
